@@ -13,6 +13,8 @@ do
     end )
 end
 
+local debugVar = CreateConVar( "sharpness_sv_debug", "0", FCVAR_NONE, "enable developer 1 visualizers to help add sharp props" )
+
 local entsMeta = FindMetaTable( "Entity" )
 
 local function dirToPos( startPos, endPos )
@@ -208,6 +210,19 @@ PROP_SHARPNESS.SPEED_CRUSH = 200
 PROP_SHARPNESS.SHARPNESS_CRUSH = 0.5
 
 
+PROP_SHARPNESS.generic_SHARP_UPWARD_SPIKE = {
+    typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
+    dirFunc = entsMeta.GetUp,
+    startSpeed = PROP_SHARPNESS.SPEED_ALWAYSDMG,
+    sharpness = PROP_SHARPNESS.SHARPNESS_SHARP,
+    dmgSounds = PROP_SHARPNESS.skewerSnd,
+    impaleStrength = PROP_SHARPNESS.IMPALE_STRONG,
+
+}
+
+PROP_SHARPNESS.generic_SHARP_DOWNWARD_SPIKE = table.Copy( PROP_SHARPNESS.generic_SHARP_UPWARD_SPIKE )
+PROP_SHARPNESS.generic_SHARP_DOWNWARD_SPIKE.invertDir = true
+
 PROP_SHARPNESS.generic_BLUNT_UPWARD_SPIKE = {
     typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
     dirFunc = entsMeta.GetUp,
@@ -273,6 +288,34 @@ PROP_SHARPNESS.generic_DUALSHARP_IBEAM.sharpness = PROP_SHARPNESS.SHARPNESS_DULL
 function PROP_SHARPNESS.AddModels( models )
     local mdlData = PROP_SHARPNESS.ModelData
     for mdl, data in pairs( models ) do
+        if not data.typeTransformer or not isfunction( data.typeTransformer ) then
+            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .typeTransformer" )
+
+        end
+        if not data.dirFunc or not isfunction( data.typeTransformer ) then
+            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .dirFunc" )
+
+        end
+        if not data.startSpeed or not isnumber( data.startSpeed ) then
+            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .startSpeed" )
+
+        end
+        if not data.sharpness or not isnumber( data.sharpness ) then
+            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .sharpness" )
+
+        end
+        if not data.dmgSounds or not istable( data.dmgSounds ) then
+            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .dmgSounds" )
+
+        end
+        if data.localPosDist and not isnumber( data.localPosDist ) then
+            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .localPosDist" )
+
+        end
+        if data.localPos and not isvector( data.localPos ) then
+            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .localPos" )
+
+        end
         mdlData[mdl] = data
 
     end
@@ -344,8 +387,15 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     local localPosDist = sharpData.localPosDist
     local sharpPoint
     if localPos and localPosDist then
-        local takersNearest = takingDamage:NearestPoint( nearest )
         sharpPoint = sharpEnt:LocalToWorld( localPos )
+        local takersNearest = takingDamage:NearestPoint( sharpPoint )
+
+        if debugVar:GetBool() then
+            debugoverlay.Cross( sharpPoint, 5, 5, color_white, true )
+            debugoverlay.Line( takersNearest, sharpPoint, 5, color_white, true )
+            debugoverlay.Text( takersNearest, takersNearest:Distance( sharpPoint ), 5, false )
+
+        end
 
         local hitSomewhereDull = takersNearest:Distance( sharpPoint ) > localPosDist
         if hitSomewhereDull then return end
@@ -365,6 +415,11 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     if not isWorld then
         damage = scaleDamageForEntsMaterial( takingDamage, damage ) -- so we dont instakill glide cars, etc
+
+    end
+
+    if sharpData.maxDamage then
+        damage = math.min( damage, sharpData.maxDamage )
 
     end
 

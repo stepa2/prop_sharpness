@@ -18,8 +18,8 @@ local models = {
         typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
         dirFunc = entsMeta.GetForward,
         invertDir = nil,
-        localPos = Vector( 9.5, -39, 4 ),
-        localPosDist = 50,
+        localPos = Vector( 9.5, -40, 4 ),
+        localPosDist = 55,
         startSpeed = PROP_SHARPNESS.SPEED_ALWAYSDMG,
         sharpness = PROP_SHARPNESS.SHARPNESS_DULL,
         dmgSounds = PROP_SHARPNESS.sawbladeSliceSound,
@@ -62,6 +62,18 @@ local models = {
         stickSounds = PROP_SHARPNESS.metalstickSounds,
 
     },
+    ["models/weapons/w_spade.mdl"] = { -- spade'n
+        typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
+        dirFunc = entsMeta.GetUp,
+        invertDir = true,
+        startSpeed = PROP_SHARPNESS.SPEED_ALWAYSDMG,
+        sharpness = PROP_SHARPNESS.SHARPNESS_SHARP,
+        dmgSounds = PROP_SHARPNESS.skewerSnd,
+        impaleStrength = PROP_SHARPNESS.IMPALE_STRONG,
+        sticks = true,
+        stickSounds = PROP_SHARPNESS.metalstickSounds,
+
+    },
     ["models/props_junk/harpoon002a.mdl"] = {
         typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
         dirFunc = entsMeta.GetForward,
@@ -74,16 +86,6 @@ local models = {
         impaleStrength = PROP_SHARPNESS.IMPALE_STRONG,
         sticks = true,
         stickSounds = PROP_SHARPNESS.metalstickSounds,
-
-    },
-    ["models/props_mining/railroad_spike01.mdl"] = {
-        typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
-        dirFunc = entsMeta.GetForward,
-        invertDir = nil,
-        startSpeed = PROP_SHARPNESS.SPEED_ALWAYSDMG,
-        sharpness = PROP_SHARPNESS.SHARPNESS_DULL,
-        dmgSounds = PROP_SHARPNESS.skewerSnd,
-        impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
 
     },
 
@@ -143,7 +145,11 @@ local models = {
     },
 
     ["models/props_c17/chair02a.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
+    ["models/nova/chair_plastic01.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
     ["models/props_interiors/furniture_chair03a.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
+    ["models/props_interiors/furniture_chair01a.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
+    ["models/nova/chair_wood01.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
+
     ["models/props_c17/furnituretable001a.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
     ["models/props_c17/furnituretable002a.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
     ["models/props_c17/furnituretable003a.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,

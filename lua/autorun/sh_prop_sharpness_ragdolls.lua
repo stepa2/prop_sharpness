@@ -76,12 +76,21 @@ function PROP_SHARPNESS.skewerRagdoll( rag, impaledOn, strength, forcedPoint, bl
     if stuffImpaled then
         if stuffImpaled[ rag ] then debugPring( "yield_doubleimpale" ) return end
 
+        local div
+        if CLIENT then -- cside ragdolls arent laggy, let more of them be impaled 
+            div = 1.25
+
+        else
+            div = 2
+
+        end
+
         for ent, _ in pairs( stuffImpaled ) do
             if not IsValid( ent ) then
                 stuffImpaled[ent] = nil
 
             else
-                strength = strength / 2
+                strength = strength / div
 
             end
         end
