@@ -9,9 +9,10 @@ local models = {
         startSpeed = PROP_SHARPNESS.SPEED_ALWAYSDMG,
         sharpness = PROP_SHARPNESS.SHARPNESS_SHARP,
         dmgSounds = PROP_SHARPNESS.sawbladeSliceSound,
-        impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
+        impaleStrength = PROP_SHARPNESS.IMPALE_MEDIUM,
         sticks = true,
         stickSounds = PROP_SHARPNESS.metalstickSounds,
+        canSlice = true,
 
     },
     ["models/props_c17/trappropeller_blade.mdl"] = {
@@ -24,6 +25,7 @@ local models = {
         sharpness = PROP_SHARPNESS.SHARPNESS_DULL,
         dmgSounds = PROP_SHARPNESS.sawbladeSliceSound,
         impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
+        canSlice = true,
 
     },
     ["models/props_junk/meathook001a.mdl"] = {
@@ -72,6 +74,7 @@ local models = {
         impaleStrength = PROP_SHARPNESS.IMPALE_STRONG,
         sticks = true,
         stickSounds = PROP_SHARPNESS.metalstickSounds,
+        canSlice = true,
 
     },
     ["models/props_junk/harpoon002a.mdl"] = {

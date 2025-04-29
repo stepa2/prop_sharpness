@@ -9,10 +9,11 @@ local models = {
         localPos = Vector( 3, 0, 1 ),
         localPosDist = 10,
         startSpeed = PROP_SHARPNESS.SPEED_SUPERSHARP,
-        sharpness = PROP_SHARPNESS.SHARPNESS_SUPERSHARP,
+        sharpness = PROP_SHARPNESS.SHARPNESS_SHARP,
         maxDamage = 50,
         dmgSounds = PROP_SHARPNESS.sawbladeSliceSound,
         impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
+        canSlice = true,
 
     },
 
@@ -24,6 +25,7 @@ local models = {
         sharpness = PROP_SHARPNESS.SHARPNESS_DULL,
         dmgSounds = PROP_SHARPNESS.skewerSnd,
         impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
+        canSlice = true,
 
     },
 }

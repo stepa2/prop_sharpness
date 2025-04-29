@@ -15,6 +15,7 @@ local models = {
         impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
         sticks = true,
         stickSounds = PROP_SHARPNESS.metalstickSounds,
+        canSlice = true,
 
     },
     ["models/props_forest/saw_blade_large.mdl"] = {
@@ -27,6 +28,7 @@ local models = {
         impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
         sticks = true,
         stickSounds = PROP_SHARPNESS.metalstickSounds,
+        canSlice = true,
 
     },
     ["models/props_forest/sawblade_moving.mdl"] = {
@@ -39,6 +41,7 @@ local models = {
         impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
         sticks = true,
         stickSounds = PROP_SHARPNESS.metalstickSounds,
+        canSlice = true,
 
     },
     ["models/props_swamp/chainsaw.mdl"] = {
@@ -53,6 +56,7 @@ local models = {
         impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
         sticks = true,
         stickSounds = PROP_SHARPNESS.metalstickSounds,
+        canSlice = true,
 
     },
 

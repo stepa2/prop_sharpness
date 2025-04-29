@@ -3,12 +3,31 @@ local IsValid = IsValid
 local math = math
 
 do
-    local blockProppush = CreateConVar( "sharpness_sv_proppushdamage", "1", FCVAR_ARCHIVE, "Do sharpness damage on stuff held/thrown by the physics gun?", 0, 1 )
+    local cvarMeta = FindMetaTable( "ConVar" )
+
+    local blockProppushVar = CreateConVar( "sharpness_sv_proppushdamage", "1", FCVAR_ARCHIVE, "Do sharpness damage on stuff held/thrown by the physics gun?", 0, 1 )
     hook.Add( "prop_sharpness_blocksharpdamage", "sharpness_noplyproppushdamage", function( sharpEnt, damaged )
-        if not blockProppush:GetBool() then return end
+        if not cvarMeta.GetBool( blockProppushVar ) then return end
         if not damaged:IsPlayer() then return end
         if IsValid( sharpEnt.sharpness_PhysgunHolder ) then return true end
         if sharpEnt.sharpness_Thrower and sharpEnt.sharpness_ThrowType == "physgun" then return true end
+
+    end )
+
+    local damageMulVar = CreateConVar( "sharpness_sv_sharpdamagemul", "1", FCVAR_ARCHIVE, "Multiply 'sharp' damage by this amount", 0, 9999 )
+    hook.Add( "prop_sharpness_predamage", "sharpness_damagemul", function( _sharpEnt, _takingDamage, hookDat, _sharpData )
+        local dmgMul = cvarMeta.GetFloat( damageMulVar )
+        if dmgMul == 1 then return end
+        hookDat.damage = hookDat.damage * dmgMul
+
+    end )
+
+    local crushMagicNum = 1.035
+
+    local damageLogVar = CreateConVar( "sharpness_sv_nobigdamage", "0", FCVAR_ARCHIVE, "Stops 'sharp' damage from blowing up. Damage will clamp out at around ~200", 0, 1 )
+    hook.Add( "prop_sharpness_predamage", "sharpness_damagemath.log", function( _sharpEnt, _takingDamage, hookDat, _sharpData )
+        if not cvarMeta.GetBool( damageLogVar ) then return end
+        hookDat.damage = math.log( hookDat.damage, crushMagicNum )
 
     end )
 end
@@ -198,7 +217,7 @@ PROP_SHARPNESS.SPEED_SUPERSHARP = 5
 PROP_SHARPNESS.SHARPNESS_SUPERSHARP = 0.9
 
 PROP_SHARPNESS.SPEED_ALWAYSDMG = 75
-PROP_SHARPNESS.SHARPNESS_SHARP = 0.9
+PROP_SHARPNESS.SHARPNESS_SHARP = 0.75
 
 PROP_SHARPNESS.SPEED_DULL = 100
 PROP_SHARPNESS.SHARPNESS_DULL = 0.5
@@ -423,6 +442,11 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     end
 
+    local hookDat = { damage = damage }
+    hook.Run( "prop_sharpness_predamage", sharpEnt, takingDamage, hookDat, sharpData )
+
+    damage = hookDat.damage
+
     if sharpData.impaleStrength then
         local color = takingDamage:GetBloodColor()
 
@@ -448,7 +472,16 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
         end
     end
 
-    local dmgType = sharpData.dmgType or DMG_SLASH
+    local dmgType = sharpData.dmgType
+    if not dmgType then
+        if sharpData.canSlice and speed > math.random( 450, 550 ) then -- slice zombies!
+            dmgType = bit.bor( DMG_SLASH, DMG_CRUSH )
+
+        else
+            dmgType = DMG_SLASH
+
+        end
+    end
 
     local sharpEntsTbl = entsMeta.GetTable( sharpEnt )
 
@@ -468,6 +501,11 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     dmgInfo:SetDamageType( dmgType )
     dmgInfo:SetDamagePosition( nearest )
     dmgInfo:SetDamageForce( dmgVel )
+
+    if debugVar:GetBool() then
+        print( "SHARPNESS: " .. sharpEnt:GetModel() .. " dealt " .. math.Round( damage ) .. " damage to", takingDamage )
+
+    end
 
     takingDamage:TakeDamageInfo( dmgInfo )
 
@@ -491,7 +529,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
             PROP_SHARPNESS.BloodSpray( takingDamage, nearest, dir + VectorRand(), math.Clamp( damage / math.random( 1, 10 ), 4, 10 ) )
 
         end )
-    elseif sharpData.sticks and sharpness >= 0.85 and speed > minSharpSpeed * 4 then -- STICKING
+    elseif sharpData.sticks and sharpness >= 0.75 and speed > minSharpSpeed * 4 then -- STICKING
         if currSharpDat.preCollideAng then
             sharpEnt:SetAngles( currSharpDat.preCollideAng )
 
@@ -642,7 +680,7 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
     end
 
     if weld then
-        local block = hook.Run( "propsharpness_blockweld", thing, into )
+        local block = hook.Run( "prop_sharpness_blockweld", thing, into )
         if block then
             weld = nil
 
