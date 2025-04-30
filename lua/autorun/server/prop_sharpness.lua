@@ -7,7 +7,7 @@ do
 
     local blockProppushVar = CreateConVar( "sharpness_sv_proppushdamage", "1", FCVAR_ARCHIVE, "Do sharpness damage on stuff held/thrown by the physics gun?", 0, 1 )
     hook.Add( "prop_sharpness_blocksharpdamage", "sharpness_noplyproppushdamage", function( sharpEnt, damaged )
-        if not cvarMeta.GetBool( blockProppushVar ) then return end
+        if cvarMeta.GetBool( blockProppushVar ) then return end
         if not damaged:IsPlayer() then return end
         if IsValid( sharpEnt.sharpness_PhysgunHolder ) then return true end
         if sharpEnt.sharpness_Thrower and sharpEnt.sharpness_ThrowType == "physgun" then return true end

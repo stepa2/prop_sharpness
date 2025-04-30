@@ -160,6 +160,21 @@ local models = {
 
     },
 
+    ["models/combine_turrets/floor_turret.mdl"] = {
+        typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
+        dirFunc = entsMeta.GetUp,
+        invertDir = true,
+        startSpeed = PROP_SHARPNESS.SPEED_CRUSH,
+        sharpness = PROP_SHARPNESS.SHARPNESS_BLUNT,
+        dmgSounds = PROP_SHARPNESS.skewerSnd,
+        impaleStrength = PROP_SHARPNESS.IMPALE_MEDIUM,
+        sticks = true,
+        stickSounds = PROP_SHARPNESS.metalstickSounds,
+
+    },
+
+
+
     ["models/props_c17/chair02a.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
     ["models/nova/chair_plastic01.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
     ["models/props_interiors/furniture_chair03a.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
