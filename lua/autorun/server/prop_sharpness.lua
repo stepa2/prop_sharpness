@@ -138,7 +138,7 @@ local damageScales = {
 
 local function scaleDamageForEntsMaterial( ent, dmg )
     local mat = getMaterialForEnt( ent )
-    return dmg * damageScales[ mat ]
+    return dmg * damageScales[ mat ], mat
 
 end
 
@@ -182,9 +182,15 @@ function PROP_SHARPNESS.SHARP_PLANAR( sharpEnt, dirRef, collisonNormal ) -- flat
 end
 
 PROP_SHARPNESS.skewerSnd = {
+    "ambient/machines/slicer1.wav",
     "ambient/machines/slicer2.wav",
     "ambient/machines/slicer3.wav",
     "ambient/machines/slicer4.wav",
+
+}
+PROP_SHARPNESS.skewerSndNonMetallic = {
+    "ambient/machines/slicer2.wav",
+    "ambient/machines/slicer3.wav",
 
 }
 
@@ -204,6 +210,14 @@ PROP_SHARPNESS.metalstickSounds = {
     "physics/metal/sawblade_stick1.wav",
     "physics/metal/sawblade_stick2.wav",
     "physics/metal/sawblade_stick3.wav",
+
+}
+
+PROP_SHARPNESS.woodStickSounds = {
+    "physics/wood/wood_solid_impact_bullet2.wav",
+    "physics/wood/wood_solid_impact_bullet3.wav",
+    "physics/wood/wood_box_impact_bullet1.wav",
+    "physics/wood/wood_box_impact_bullet4.wav",
 
 }
 
@@ -279,7 +293,7 @@ PROP_SHARPNESS.generic_IMPALING_BASHING_DOWNWARD = {
     invertDir = true,
     localPos = Vector( 0, 0, 0 ),
     localPosDist = 50,
-    startSpeed = PROP_SHARPNESS.SPEED_CRUSH, -- intentional
+    startSpeed = PROP_SHARPNESS.SPEED_CRUSH,
     sharpness = PROP_SHARPNESS.SHARPNESS_CRUSH,
     dmgType = DMG_CRUSH,
     dmgSounds = PROP_SHARPNESS.bashingSound,
@@ -287,10 +301,10 @@ PROP_SHARPNESS.generic_IMPALING_BASHING_DOWNWARD = {
 
 }
 
-PROP_SHARPNESS.generic_DUALBASH_IBEAM = {
+PROP_SHARPNESS.generic_DUALBASH_IBEAM = { -- takes alot of speed to make this deal damage, but its an instakill
     typeTransformer = PROP_SHARPNESS.SHARP_DUALPOINTY,
     dirFunc = entsMeta.GetForward,
-    startSpeed = PROP_SHARPNESS.SPEED_CRUSH, -- intentional
+    startSpeed = PROP_SHARPNESS.SPEED_CRUSH,
     sharpness = PROP_SHARPNESS.SHARPNESS_CRUSH,
     dmgType = DMG_CRUSH,
     dmgSounds = PROP_SHARPNESS.bashingSound,
@@ -298,11 +312,47 @@ PROP_SHARPNESS.generic_DUALBASH_IBEAM = {
     sticks = true,
     stickSounds = {
         "d1_town.CarHit",
-    },
-}
 
+    },
+
+}
 PROP_SHARPNESS.generic_DUALSHARP_IBEAM = table.Copy( PROP_SHARPNESS.generic_DUALBASH_IBEAM )
 PROP_SHARPNESS.generic_DUALSHARP_IBEAM.sharpness = PROP_SHARPNESS.SHARPNESS_DULL
+
+PROP_SHARPNESS.generic_DUALSHARP_REBAR = { -- same as ibeam, but less intense sounds, and stronger impaling
+    typeTransformer = PROP_SHARPNESS.SHARP_DUALPOINTY,
+    dirFunc = entsMeta.GetUp,
+    startSpeed = PROP_SHARPNESS.SPEED_CRUSH,
+    sharpness = PROP_SHARPNESS.SHARPNESS_DULL,
+    dmgSounds = PROP_SHARPNESS.skewerSnd,
+    impaleStrength = PROP_SHARPNESS.IMPALE_STRONG,
+    sticks = true,
+
+}
+PROP_SHARPNESS.generic_DUALSHARPFORWARD_REBAR = table.Copy( PROP_SHARPNESS.generic_DUALSHARP_REBAR )
+PROP_SHARPNESS.generic_DUALSHARPFORWARD_REBAR.dirFunc = entsMeta.GetForward
+
+
+PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS = { -- takes little speed, and does little damage
+    typeTransformer = PROP_SHARPNESS.SHARP_DUALPOINTY,
+    dirFunc = entsMeta.GetUp,
+    startSpeed = PROP_SHARPNESS.SPEED_DULL,
+    sharpness = PROP_SHARPNESS.SHARPNESS_BLUNT,
+    dmgSounds = PROP_SHARPNESS.skewerSndNonMetallic,
+    maxDamage = 25,
+    impaleStrength = PROP_SHARPNESS.IMPALE_MEDIUM,
+    sticks = true,
+    sticksIntoOnly = { flesh = true },
+    stickSounds = PROP_SHARPNESS.woodStickSounds,
+
+}
+
+PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS = table.Copy( PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS )
+PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS.typeTransformer = PROP_SHARPNESS.SHARP_POINTY
+
+PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS = table.Copy( PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS )
+PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS.typeTransformer = PROP_SHARPNESS.SHARP_POINTY
+PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS.invertDir = true
 
 function PROP_SHARPNESS.AddModels( models )
     local mdlData = PROP_SHARPNESS.ModelData
@@ -390,14 +440,15 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     end
 
-    --local oldPos = sharpEnt:GetPos()
-    --debugoverlay.Line( oldPos, oldPos + dirRef * 25, 10, color_white, true )
-
     local forCollide, pointyDir = sharpData.typeTransformer( sharpEnt, dirRef, currSharpDat.collisonNormal )
     local sharpness = sharpData.sharpness * forCollide
     if sharpness <= 0 then return end
 
-    --debugoverlay.Line( oldPos, oldPos + pointyDir * 250, 10, color_white, true )
+    if debugVar:GetBool() then
+        local oldPos = sharpEnt:GetPos()
+        debugoverlay.Line( oldPos, oldPos + pointyDir * 250, 10, color_white, true )
+
+    end
 
     local takingsCenter = takingDamage:WorldSpaceCenter()
     local nearest = sharpEnt:NearestPoint( takingsCenter )
@@ -429,11 +480,12 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     local overMin = speed - minSharpSpeed
     local damage = overMin * sharpness
-    damage = math.floor( damage )
-    if damage <= 0 then return end
+
+    damage = scaleDamageForEntsMaterial( sharpEnt, damage )
+    local takingDamagesMat
 
     if not isWorld then
-        damage = scaleDamageForEntsMaterial( takingDamage, damage ) -- so we dont instakill glide cars, etc
+        damage, takingDamagesMat = scaleDamageForEntsMaterial( takingDamage, damage ) -- so we dont instakill glide cars, etc
 
     end
 
@@ -446,6 +498,9 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     hook.Run( "prop_sharpness_predamage", sharpEnt, takingDamage, hookDat, sharpData )
 
     damage = hookDat.damage
+
+    damage = math.floor( damage )
+    if damage <= 0 then return end
 
     if sharpData.impaleStrength then
         local color = takingDamage:GetBloodColor()
@@ -529,7 +584,8 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
             PROP_SHARPNESS.BloodSpray( takingDamage, nearest, dir + VectorRand(), math.Clamp( damage / math.random( 1, 10 ), 4, 10 ) )
 
         end )
-    elseif sharpData.sticks and sharpness >= 0.75 and speed > minSharpSpeed * 4 then -- STICKING
+    elseif sharpData.sticks and sharpness >= 0.75 and speed > minSharpSpeed * 4 and damage > 25 then -- STICKING
+        if sharpData.sticksIntoOnly and ( not takingDamagesMat or not sharpData.sticksIntoOnly[takingDamagesMat] ) then return end
         if currSharpDat.preCollideAng then
             sharpEnt:SetAngles( currSharpDat.preCollideAng )
 

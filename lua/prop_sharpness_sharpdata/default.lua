@@ -77,6 +77,19 @@ local models = {
         canSlice = true,
 
     },
+    ["models/props_junk/shovel01a.mdl"] = { -- shovl'n
+        typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
+        dirFunc = entsMeta.GetUp,
+        invertDir = true,
+        startSpeed = PROP_SHARPNESS.SPEED_ALWAYSDMG,
+        sharpness = PROP_SHARPNESS.SHARPNESS_SHARP,
+        dmgSounds = PROP_SHARPNESS.skewerSnd,
+        impaleStrength = PROP_SHARPNESS.IMPALE_STRONG,
+        sticks = true,
+        stickSounds = PROP_SHARPNESS.metalstickSounds,
+        canSlice = true,
+
+    },
     ["models/props_junk/harpoon002a.mdl"] = {
         typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
         dirFunc = entsMeta.GetForward,
@@ -196,6 +209,34 @@ local models = {
     ["models/props_c17/utilitypole02b.mdl"] = PROP_SHARPNESS.generic_IMPALING_BASHING_DOWNWARD,
     ["models/props_c17/utilitypole03a.mdl"] = PROP_SHARPNESS.generic_IMPALING_BASHING_DOWNWARD,
 
+
+    -- reeebar
+    ["models/props_debris/rebar001a_32.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar001b_48.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar001c_64.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar001d_96.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar002a_32.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar002b_48.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar002c_64.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar002d_96.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar003a_32.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar003b_48.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar003c_64.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar004a_32.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar004b_48.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar004c_64.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar004d_96.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar_cluster001a.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar_cluster001b.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar_cluster002a.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar_cluster002b.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar_medthin01a.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_REBAR,
+    ["models/props_debris/rebar_medthin02a.mdl"] = PROP_SHARPNESS.generic_DUALSHARPFORWARD_REBAR,
+    -- skipping curved ones :(
+    ["models/props_debris/rebar_medthin03a.mdl"] = PROP_SHARPNESS.generic_DUALSHARPFORWARD_REBAR,
+
+
+    -- beems
     ["models/props_junk/ibeam01a.mdl"] = PROP_SHARPNESS.generic_DUALBASH_IBEAM,
     ["models/props_junk/ibeam01a_cluster01.mdl"] = PROP_SHARPNESS.generic_DUALBASH_IBEAM,
     ["models/mechanics/solid_steel/box_beam_16.mdl"] = PROP_SHARPNESS.generic_DUALBASH_IBEAM,
@@ -222,6 +263,52 @@ local models = {
     ["models/mechanics/solid_steel/u_beam_24.mdl"] = PROP_SHARPNESS.generic_DUALBASH_IBEAM,
     ["models/mechanics/solid_steel/u_beam_32.mdl"] = PROP_SHARPNESS.generic_DUALBASH_IBEAM,
     ["models/mechanics/solid_steel/u_beam_48.mdl"] = PROP_SHARPNESS.generic_DUALBASH_IBEAM,
+
+
+    -- board gibs
+    ["models/props_debris/wood_chunk01b.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk01a.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk01c.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk01d.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk01e.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk01f.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+
+    -- skipped chunk02
+
+    ["models/props_debris/wood_chunk03a.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk03b.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk03c.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk03d.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk03e.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk03f.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+
+    ["models/props_debris/wood_chunk04b.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk04e.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+
+    ["models/props_debris/wood_chunk05a.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk05b.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk05c.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk05d.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk05e.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk05f.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+
+    ["models/props_debris/wood_chunk06a.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk06b.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk06d.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk06e.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk06f.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+
+    ["models/props_debris/wood_chunk07a.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk07b.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk07c.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk07d.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk07e.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk07f.mdl"] = PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS,
+
+    ["models/props_debris/wood_chunk08b.mdl"] = PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk08d.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk08e.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
+    ["models/props_debris/wood_chunk08f.mdl"] = PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS,
 
     --[[
     [""] = PROP_SHARPNESS.generic_DUALBASH_IBEAM,
