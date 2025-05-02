@@ -640,12 +640,23 @@ do
             model = string_lowerCreated( model )
             local sharpData = PROP_SHARPNESS.ModelData[model]
             if not sharpData then return end
+
             ent.sharpness_NextDealDamage = 0
             ent.IsSharp = true
-            ent:AddCallback( "PhysicsCollide", function( sharpEnt, colData )
-                handleSharpCollide( sharpEnt, colData, sharpData )
 
-            end )
+            if ent:IsScripted() then
+                ent.sharpness_OldPhysicsCollide = ent.PhysicsCollide -- kinda hacky
+                function ent:PhysicsCollide( colData, collider )
+                    ent.sharpness_OldPhysicsCollide( colData, collider )
+                    handleSharpCollide( self, colData, sharpData )
+
+                end
+            else
+                ent:AddCallback( "PhysicsCollide", function( sharpEnt, colData )
+                    handleSharpCollide( sharpEnt, colData, sharpData )
+
+                end )
+            end
         end )
     end )
 end
