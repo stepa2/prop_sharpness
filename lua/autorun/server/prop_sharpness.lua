@@ -9,8 +9,8 @@ do
     hook.Add( "prop_sharpness_blocksharpdamage", "sharpness_noplyproppushdamage", function( sharpEnt, damaged )
         if cvarMeta.GetBool( blockProppushVar ) then return end
         if not damaged:IsPlayer() then return end
-        if IsValid( sharpEnt.sharpness_PhysgunHolder ) then return true end
-        if sharpEnt.sharpness_Thrower and sharpEnt.sharpness_ThrowType == "physgun" then return true end
+        if IsValid( sharpEnt.sharpness_PhysgunHolder ) and damaged ~= sharpEnt.sharpness_PhysgunHolder then return true end
+        if sharpEnt.sharpness_Thrower and sharpEnt.sharpness_ThrowType == "physgun" and damaged ~= sharpEnt.sharpness_Thrower then return true end
 
     end )
 
@@ -541,10 +541,10 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     local sharpEntsTbl = entsMeta.GetTable( sharpEnt )
 
     local attacker = sharpEnt
-    if sharpEntsTbl.sharpness_Holder then
+    if IsValid( sharpEntsTbl.sharpness_Holder ) then
         attacker = sharpEntsTbl.sharpness_Holder
 
-    elseif sharpEntsTbl.sharpness_Thrower then
+    elseif IsValid( sharpEntsTbl.sharpness_Thrower ) then
         attacker = sharpEntsTbl.sharpness_Thrower
 
     end
@@ -797,7 +797,7 @@ hook.Add( "OnPhysgunPickup", "sharpness_clearstuck", function( ply, ent )
 end )
 
 
-local function manageThrownSharpThing( thrower, thrown, throwType ) -- GIVE CORRECT INFLICTOR
+local function manageThrownSharpThing( thrower, thrown, throwType ) -- GIVE CORRECT ATTACKER
     local thrownsObj = thrown:GetPhysicsObject()
     if not IsValid( thrownsObj ) then return end
     if not thrownsObj:IsMotionEnabled() then return end
@@ -816,7 +816,6 @@ local function manageThrownSharpThing( thrower, thrown, throwType ) -- GIVE CORR
 
     end
 
-    timer.Remove( timerName )
     timer.Create( timerName, 1, 0, function()
         if not IsValid( thrown ) then stopThrow() return end
         if not IsValid( thrownsObj ) then stopThrow() return end
@@ -825,6 +824,17 @@ local function manageThrownSharpThing( thrower, thrown, throwType ) -- GIVE CORR
 
     end )
 end
+
+-- ALWAYS MAKE THE ATTACKER THE THROWER
+hook.Add( "EntityTakeDamage", "prop_sharpness_alwayscorrectattacker", function( _victim, dmg )
+    local inflictor = dmg:GetAttacker()
+    if not IsValid( inflictor ) then return end
+    if not inflictor.IsSharp then return end
+    if not IsValid( inflictor.sharpness_Thrower ) then return end
+
+    dmg:SetAttacker( inflictor.sharpness_Thrower )
+
+end )
 
 hook.Add( "PhysgunPickup", "prop_sharpness", function( picker, picked )
     if not picked.IsSharp then return end
@@ -853,6 +863,7 @@ hook.Add( "GravGunOnDropped", "prop_sharpness", function( _, picked )
 end )
 hook.Add( "GravGunPunt", "prop_sharpness", function( punter, punted )
     if not punted.IsSharp then return end
+    punted.sharpness_Holder = nil
     manageThrownSharpThing( punter, punted, "gravgun" )
 
 end )
