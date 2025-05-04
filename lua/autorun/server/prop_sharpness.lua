@@ -647,7 +647,7 @@ do
             if ent:IsScripted() then
                 ent.sharpness_OldPhysicsCollide = ent.PhysicsCollide -- kinda hacky
                 function ent:PhysicsCollide( colData, collider )
-                    ent.sharpness_OldPhysicsCollide( colData, collider )
+                    self.sharpness_OldPhysicsCollide( colData, collider )
                     handleSharpCollide( self, colData, sharpData )
 
                 end
