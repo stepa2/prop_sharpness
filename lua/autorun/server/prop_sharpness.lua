@@ -733,6 +733,9 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
     end
 
     if freeze or weld then
+        thing:ForcePlayerDrop()
+        into:ForcePlayerDrop()
+
         local paths = sharpData.stickSounds
         local path = paths[math.random( 1, #paths )]
         local pitch = math.random( 95, 105 )
@@ -747,16 +750,18 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
     end
 
     if weld then
-        local block = hook.Run( "prop_sharpness_blockweld", thing, into )
+        local block, freezeInstead = hook.Run( "prop_sharpness_blockweld", thing, into )
         if block then
             weld = nil
+
+        end
+        if freezeInstead then
+            freeze = true
 
         end
     end
 
     if weld then
-        thing:ForcePlayerDrop()
-        into:ForcePlayerDrop()
         local strength = math.min( thingsObj:GetMass() * 100, intoObj and intoObj:GetMass() * 100 or math.huge )
 
         local newWeld = constraint.Weld( thing, into, 0, 0, strength, false )
@@ -827,7 +832,7 @@ end
 
 -- ALWAYS MAKE THE ATTACKER THE THROWER
 hook.Add( "EntityTakeDamage", "prop_sharpness_alwayscorrectattacker", function( _victim, dmg )
-    local inflictor = dmg:GetAttacker()
+    local inflictor = dmg:GetInflictor()
     if not IsValid( inflictor ) then return end
     if not inflictor.IsSharp then return end
     if not IsValid( inflictor.sharpness_Thrower ) then return end
