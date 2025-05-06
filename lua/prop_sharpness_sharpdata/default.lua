@@ -126,6 +126,27 @@ local models = {
 
     },
 
+    ["models/props_phx/mechanics/medgear.mdl"] = {
+        typeTransformer = PROP_SHARPNESS.SHARP_PLANAR,
+        dirFunc = entsMeta.GetUp,
+        invertDir = nil,
+        startSpeed = PROP_SHARPNESS.SPEED_CRUSH,
+        sharpness = PROP_SHARPNESS.SHARPNESS_BLUNT,
+        dmgSounds = PROP_SHARPNESS.bashingSound,
+        impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
+
+    },
+    ["models/props_phx/mechanics/biggear.mdl"] = {
+        typeTransformer = PROP_SHARPNESS.SHARP_PLANAR,
+        dirFunc = entsMeta.GetUp,
+        invertDir = nil,
+        startSpeed = PROP_SHARPNESS.SPEED_CRUSH,
+        sharpness = PROP_SHARPNESS.SHARPNESS_BLUNT,
+        dmgSounds = PROP_SHARPNESS.bashingSound,
+        impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
+
+    },
+
     ["models/props_c17/signpole001.mdl"] = {
         typeTransformer = PROP_SHARPNESS.SHARP_DUALPOINTY,
         dirFunc = entsMeta.GetUp,

@@ -15,3 +15,15 @@ function PROP_SHARPNESS.BloodSpray( ent, pos, dir, scale, color )
     util.Effect( "bloodspray", effData )
 
 end
+
+function PROP_SHARPNESS.SparkSpray( pos, dir, scale )
+
+    local effData = EffectData()
+    effData:SetOrigin( pos )
+    effData:SetNormal( dir )
+    effData:SetScale( scale )
+    util.Effect( "ManhackSparks", effData )
+
+    print( pos )
+
+end

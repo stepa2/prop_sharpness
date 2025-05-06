@@ -32,6 +32,8 @@ do
     end )
 end
 
+local doSelfDamageVar = CreateConVar( "sharpness_sv_selfdamage", "1", FCVAR_ARCHIVE, "Makes sharp props take a bit of 'dulling' damage when they poke stuff.", 0, 1 )
+
 local debugVar = CreateConVar( "sharpness_sv_debug", "0", FCVAR_NONE, "enable developer 1 visualizers to help add sharp props" )
 
 local entsMeta = FindMetaTable( "Entity" )
@@ -64,6 +66,23 @@ local potentialMaterials = {
     "concrete",
 }
 
+local function getMaterialFromString( str )
+    str = string_lower( str )
+    local theMat = "generic"
+    for _, currMat in ipairs( potentialMaterials ) do
+        if string_find( str, currMat ) then
+            --print( loweredStr, currMat, ent:GetModel() )
+            theMat = currMat
+            break
+
+        end
+    end
+
+    theMat = materialAliases[theMat] or theMat
+
+    return theMat
+end
+
 local function getMaterialForEnt( ent )
     if not IsValid( ent ) then return end
 
@@ -84,6 +103,12 @@ local function getMaterialForEnt( ent )
 
             end
         end
+    end
+
+    local bloodColor = ent:GetBloodColor() or ent.sharpness_BloodColor
+    if bloodColor and bloodColor >= 0 then
+        theMat = "flesh"
+
     end
 
     if not theMat then
@@ -109,11 +134,7 @@ local function getMaterialForEnt( ent )
 
     end
 
-    local alias = materialAliases[theMat]
-    if alias then
-        theMat = alias
-
-    end
+    theMat = materialAliases[theMat] or theMat
 
     ent.sharpness_CachedSoundMaterial = theMat
 
@@ -130,9 +151,8 @@ end
 local damageScales = {
     ["wood"] = 0.75,
     ["flesh"] = 1,
-    ["antlion"] = 1,
     ["plastic"] = 0.8,
-    ["generic"] = 0.25,
+    ["generic"] = 0.25, -- metal, concrete, etc
 
 }
 
@@ -421,7 +441,11 @@ hook.Add( "InitPostEntity", "prop_sharpness_gobble", function()
 
 end )
 
+local sparkClipMaxs = Vector( 1, 1, 1 )
+local sparkClipMins = -sparkClipMaxs
+
 function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDamage )
+    local isWorld
     if not IsValid( takingDamage ) then
         if takingDamage and takingDamage:IsWorld() then
             isWorld = true-- we stick into the world...
@@ -450,6 +474,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     end
 
+    local dealingsCenter = sharpEnt:WorldSpaceCenter()
     local takingsCenter = takingDamage:WorldSpaceCenter()
     local nearest = sharpEnt:NearestPoint( takingsCenter )
 
@@ -481,10 +506,24 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     local overMin = speed - minSharpSpeed
     local damage = overMin * sharpness
 
-    damage = scaleDamageForEntsMaterial( sharpEnt, damage )
-    local takingDamagesMat
+    local worldMatResult
+    local sharpEntsMat, takingDamagesMat
 
-    if not isWorld then
+    damage, sharpEntsMat = scaleDamageForEntsMaterial( sharpEnt, damage )
+
+    if isWorld then
+        worldMatResult = util.TraceLine( {
+            start = localPos or dealingsCenter,
+            endpos = dealingsCenter + pointyDir * sharpEnt:GetModelRadius() * 2,
+            filter = sharpEnt,
+            mask = MASK_SOLID_BRUSHONLY,
+
+        } )
+        if worldMatResult.HitWorld then
+            takingDamagesMat = getMaterialFromString( worldMatResult.MatType )
+
+        end
+    else
         damage, takingDamagesMat = scaleDamageForEntsMaterial( takingDamage, damage ) -- so we dont instakill glide cars, etc
 
     end
@@ -540,12 +579,17 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     local sharpEntsTbl = entsMeta.GetTable( sharpEnt )
 
-    local attacker = sharpEnt
+    local attacker
     if IsValid( sharpEntsTbl.sharpness_Holder ) then
         attacker = sharpEntsTbl.sharpness_Holder
 
-    elseif IsValid( sharpEntsTbl.sharpness_Thrower ) then
+    end
+    if not attacker and IsValid( sharpEntsTbl.sharpness_Thrower ) then
         attacker = sharpEntsTbl.sharpness_Thrower
+
+    end
+    if not attacker then
+        attacker = ( CPPI and IsValid( sharpEnt:CPPIGetOwner() ) ) and sharpEnt:CPPIGetOwner() or sharpEnt:GetCreator()
 
     end
 
@@ -564,9 +608,49 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     takingDamage:TakeDamageInfo( dmgInfo )
 
+    if doSelfDamageVar:GetBool() then -- for servers with simple prop damage, etc
+        local selfDamage = damage * 0.01
+        local selfDmgInfo = DamageInfo()
+        selfDmgInfo:SetAttacker( sharpEnt )
+        selfDmgInfo:SetInflictor( sharpEnt )
+        selfDmgInfo:SetDamage( selfDamage )
+        selfDmgInfo:SetDamageType( DMG_SLASH )
+        selfDmgInfo:SetDamagePosition( nearest )
+        selfDmgInfo:SetDamageForce( dmgVel )
+        sharpEnt:TakeDamageInfo( selfDmgInfo )
+
+    end
+
+
     local bloodRef = sharpPoint or sharpEnt:WorldSpaceCenter()
-    local scale = math.Clamp( damage / math.random( 8, math.max( 10, damage ) ), 8, 12 )
-    PROP_SHARPNESS.BloodSpray( takingDamage, nearest, dirToPos( bloodRef, takingsCenter ), scale )
+    if takingDamagesMat == "flesh" then -- bluud!
+        local scale = math.Clamp( damage / math.random( 8, math.max( 10, damage ) ), 8, 12 )
+        PROP_SHARPNESS.BloodSpray( takingDamage, nearest, dirToPos( bloodRef, takingsCenter ), scale )
+
+    end
+
+    if sharpEntsMat == "generic" and takingDamagesMat == "generic" then -- sparks!
+        local scale = math.Clamp( damage / math.random( 8, math.max( 10, damage ) ), 8, 12 )
+        local nearestInside
+        if not isWorld and util.IsInWorld( nearest ) then
+            nearestInside = nearest
+
+        else
+            local nearestInsideResult = util.TraceHull( {
+                start = localPos or dealingsCenter,
+                endpos = dealingsCenter + pointyDir * sharpEnt:GetModelRadius() * 2,
+                filter = sharpEnt,
+                mask = MASK_SOLID_BRUSHONLY,
+                mins = sparkClipMins,
+                maxs = sparkClipMaxs,
+
+            } )
+            nearestInside = nearestInsideResult.HitPos
+
+        end
+        PROP_SHARPNESS.SparkSpray( nearestInside, dirToPos( takingsCenter, bloodRef ), scale )
+
+    end
 
     if alive or isRagdoll then
         sharpEntsTbl.sharpness_NextDealDamage = CurTime() + 0.15
@@ -759,13 +843,13 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
     end
 
     if weld then
-        thing:ForcePlayerDrop()
-        into:ForcePlayerDrop()
-
         local strength = math.min( thingsObj:GetMass() * 100, intoObj and intoObj:GetMass() * 100 or math.huge )
 
         local newWeld = constraint.Weld( thing, into, 0, 0, strength, false )
         if not IsValid( newWeld ) then return end
+
+        thing:ForcePlayerDrop()
+        into:ForcePlayerDrop()
 
         local noCollide = constraint.NoCollide( thing, into, 0, 0, true )
         newWeld:DeleteOnRemove( noCollide )
