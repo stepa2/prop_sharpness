@@ -589,8 +589,13 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     end
     if not attacker then
-        attacker = ( CPPI and IsValid( sharpEnt:CPPIGetOwner() ) ) and sharpEnt:CPPIGetOwner() or sharpEnt:GetCreator()
+        if CPPI and IsValid( sharpEnt:CPPIGetOwner() ) then
+            attacker = sharpEnt:CPPIGetOwner()
 
+        elseif IsValid( sharpEnt:GetCreator() ) then
+            attacker = sharpEnt:GetCreator()
+
+        end
     end
     if not attacker then
         attacker = sharpEnt -- :(
