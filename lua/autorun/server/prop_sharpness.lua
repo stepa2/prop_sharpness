@@ -737,6 +737,11 @@ do
             ent.sharpness_NextDealDamage = 0
             ent.IsSharp = true
 
+            if debugVar:GetBool() then
+                print( "SHARPNESS: " .. model .. " is sharp!" )
+
+            end
+
             if ent:IsScripted() then
                 ent.sharpness_OldPhysicsCollide = ent.PhysicsCollide -- kinda hacky
                 function ent:PhysicsCollide( colData, collider )
@@ -754,6 +759,7 @@ do
     end )
 end
 
+-- always do sharp damage if player falls on a sharp prop
 hook.Add( "GetFallDamage", "prop_sharpness_sharplanding", function( ply, speed )
     local landEnt = ply:GetGroundEntity()
 
