@@ -630,7 +630,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
         selfDmgInfo:SetDamage( selfDamage )
         selfDmgInfo:SetDamageType( DMG_SLASH )
         selfDmgInfo:SetDamagePosition( nearest )
-        selfDmgInfo:SetDamageForce( dmgVel )
+        selfDmgInfo:SetDamageForce( dmgVel * 0.01 )
         sharpEnt:TakeDamageInfo( selfDmgInfo )
 
     end
