@@ -110,7 +110,7 @@ local function getMaterialForEnt( ent )
         end
     end
 
-    local bloodColor = ent:GetBloodColor() or ent.sharpness_BloodColor
+    local bloodColor = ent.bloodColorHitFix or ent:GetBloodColor() or ent.sharpness_BloodColor
     if bloodColor and bloodColor >= 0 then
         theMat = "flesh"
 
@@ -161,7 +161,7 @@ local damageScales = {
 
 }
 
-local function scaleDamageForEntsMaterial( ent, dmg )
+function PROP_SHARPNESS.scaleDamageForEntsMaterial( ent, dmg )
     local mat = getMaterialForEnt( ent )
     return dmg * damageScales[ mat ], mat
 
@@ -171,7 +171,7 @@ end
 PROP_SHARPNESS = PROP_SHARPNESS or {}
 
 function PROP_SHARPNESS.CanBleed( ent )
-    local color = ent:GetBloodColor()
+    local color = ent.bloodColorHitFix or ent:GetBloodColor()
     if not color then return end
     return color >= 0
 
@@ -514,7 +514,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     local worldMatResult
     local sharpEntsMat, takingDamagesMat
 
-    damage, sharpEntsMat = scaleDamageForEntsMaterial( sharpEnt, damage )
+    damage, sharpEntsMat = PROP_SHARPNESS.scaleDamageForEntsMaterial( sharpEnt, damage )
 
     if isWorld then
         worldMatResult = util.TraceLine( {
@@ -529,7 +529,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
         end
     else
-        damage, takingDamagesMat = scaleDamageForEntsMaterial( takingDamage, damage ) -- so we dont instakill glide cars, etc
+        damage, takingDamagesMat = PROP_SHARPNESS.scaleDamageForEntsMaterial( takingDamage, damage ) -- so we dont instakill glide cars, etc
 
     end
 
@@ -547,7 +547,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     if damage <= 0 then return end
 
     if sharpData.impaleStrength then
-        local color = takingDamage:GetBloodColor()
+        local color = takingDamage.bloodColorHitFix or takingDamage:GetBloodColor()
 
         if isRagdoll then
             PROP_SHARPNESS.skewerRagdoll( takingDamage, sharpEnt, sharpData.impaleStrength, sharpData.localPos, color )
@@ -623,14 +623,15 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     takingDamage:TakeDamageInfo( dmgInfo )
 
     if doSelfDamageVar:GetBool() then -- for servers with simple prop damage, etc
-        local selfDamage = damage * 0.01
+        local multiplier = 0.005
+        local selfDamage = damage * multiplier
         local selfDmgInfo = DamageInfo()
         selfDmgInfo:SetAttacker( sharpEnt )
         selfDmgInfo:SetInflictor( sharpEnt )
         selfDmgInfo:SetDamage( selfDamage )
         selfDmgInfo:SetDamageType( DMG_SLASH )
         selfDmgInfo:SetDamagePosition( nearest )
-        selfDmgInfo:SetDamageForce( dmgVel * 0.01 )
+        selfDmgInfo:SetDamageForce( dmgVel * multiplier )
         sharpEnt:TakeDamageInfo( selfDmgInfo )
 
     end
@@ -913,6 +914,7 @@ local function manageThrownSharpThing( thrower, thrown, throwType ) -- GIVE CORR
 
     thrown.sharpness_ThrowType = throwType
     thrown.sharpness_Thrower = thrower
+    thrown.sharpness_ThrowFriction = 5
 
     local timerName  = "prop_sharpness_thrownattacker_" .. thrown:GetCreationID()
 
@@ -929,8 +931,14 @@ local function manageThrownSharpThing( thrower, thrown, throwType ) -- GIVE CORR
         if not IsValid( thrown ) then stopThrow() return end
         if not IsValid( thrownsObj ) then stopThrow() return end
         if not thrownsObj:IsMotionEnabled() then stopThrow() return end
-        if thrownsObj:GetVelocity():Length() <= 5 then stopThrow() return end
+        if thrownsObj:GetVelocity():Length() <= 5 then
+            thrown.sharpness_ThrowFriction = thrown.sharpness_ThrowFriction + -1
+            if thrown.sharpness_ThrowFriction <= 0 then
+                stopThrow()
+                return
 
+            end
+        end
     end )
 end
 
@@ -964,10 +972,10 @@ hook.Add( "GravGunOnPickedUp", "prop_sharpness", function( picker, picked )
     picked.sharpness_Holder = picker
 
 end )
-hook.Add( "GravGunOnDropped", "prop_sharpness", function( _, picked )
+hook.Add( "GravGunOnDropped", "prop_sharpness", function( dropper, picked )
     if not picked.IsSharp then return end
     picked.sharpness_Holder = nil
-    manageThrownSharpThing( picker, picked )
+    manageThrownSharpThing( dropper, picked, "gravgun" )
 
 end )
 hook.Add( "GravGunPunt", "prop_sharpness", function( punter, punted )

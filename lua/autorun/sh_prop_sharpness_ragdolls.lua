@@ -369,7 +369,7 @@ hook.Add( "CreateClientsideRagdoll", "prop_sharpness_csideskewer", function( die
 end )
 
 hook.Add( "CreateEntityRagdoll", "prop_sharpness_serverskewer", function( died, rag )
-    local bloodColor = died:GetBloodColor()
+    local bloodColor = died.bloodColorHitFix or died:GetBloodColor()
     if bloodColor and bloodColor >= 0 then
         rag.sharpness_BloodColor = bloodColor
 

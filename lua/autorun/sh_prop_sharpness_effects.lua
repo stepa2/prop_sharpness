@@ -2,7 +2,7 @@
 PROP_SHARPNESS = PROP_SHARPNESS or {}
 
 function PROP_SHARPNESS.BloodSpray( ent, pos, dir, scale, color )
-    color = color or ent:GetBloodColor() or ent.sharpness_BloodColor
+    color = color or ent.bloodColorHitFix or ent:GetBloodColor() or ent.sharpness_BloodColor
     if not color then return end
     if color < 0 then return end
 
