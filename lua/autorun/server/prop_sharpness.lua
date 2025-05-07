@@ -35,6 +35,11 @@ end
 local doSelfDamageVar = CreateConVar( "sharpness_sv_selfdamage", "1", FCVAR_ARCHIVE, "Makes sharp props take a bit of 'dulling' damage when they poke stuff.", 0, 1 )
 
 local debugVar = CreateConVar( "sharpness_sv_debug", "0", FCVAR_NONE, "enable developer 1 visualizers to help add sharp props" )
+local debugging = debugVar:GetBool()
+cvars.AddChangeCallback( "sharpness_sv_debug", function()
+    debugging = debugVar:GetBool()
+
+end, "asbool" )
 
 local entsMeta = FindMetaTable( "Entity" )
 
@@ -468,7 +473,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     local sharpness = sharpData.sharpness * forCollide
     if sharpness <= 0 then return end
 
-    if debugVar:GetBool() then
+    if debugging then
         local oldPos = sharpEnt:GetPos()
         debugoverlay.Line( oldPos, oldPos + pointyDir * 250, 10, color_white, true )
 
@@ -485,7 +490,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
         sharpPoint = sharpEnt:LocalToWorld( localPos )
         local takersNearest = takingDamage:NearestPoint( sharpPoint )
 
-        if debugVar:GetBool() then
+        if debugging then
             debugoverlay.Cross( sharpPoint, 5, 5, color_white, true )
             debugoverlay.Line( takersNearest, sharpPoint, 5, color_white, true )
             debugoverlay.Text( takersNearest, takersNearest:Distance( sharpPoint ), 5, false )
@@ -610,7 +615,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     dmgInfo:SetDamagePosition( nearest )
     dmgInfo:SetDamageForce( dmgVel )
 
-    if debugVar:GetBool() then
+    if debugging then
         print( "SHARPNESS: " .. sharpEnt:GetModel() .. " dealt " .. math.Round( damage ) .. " damage to", takingDamage )
 
     end
@@ -737,8 +742,8 @@ do
             ent.sharpness_NextDealDamage = 0
             ent.IsSharp = true
 
-            if debugVar:GetBool() then
-                print( "SHARPNESS: " .. model .. " is sharp!" )
+            if debugging then
+                print( "SHARPNESS: Made \"" .. model .. "\" sharp." )
 
             end
 
