@@ -924,6 +924,7 @@ local function manageThrownSharpThing( thrower, thrown, throwType ) -- GIVE CORR
 
         thrown.sharpness_Thrower = nil
         thrown.sharpness_ThrowType = nil
+        thrown.sharpness_ThrowFriction = nil
 
     end
 
@@ -932,7 +933,7 @@ local function manageThrownSharpThing( thrower, thrown, throwType ) -- GIVE CORR
         if not IsValid( thrownsObj ) then stopThrow() return end
         if not thrownsObj:IsMotionEnabled() then stopThrow() return end
         if thrownsObj:GetVelocity():Length() <= 5 then
-            thrown.sharpness_ThrowFriction = thrown.sharpness_ThrowFriction + -1
+            thrown.sharpness_ThrowFriction = ( thrown.sharpness_ThrowFriction or 0 ) + -1
             if thrown.sharpness_ThrowFriction <= 0 then
                 stopThrow()
                 return
