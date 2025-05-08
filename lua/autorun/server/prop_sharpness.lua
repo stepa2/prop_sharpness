@@ -22,9 +22,9 @@ do
 
     end )
 
-    local crushMagicNum = 1.035
+    local crushMagicNum = 1.025
 
-    local damageLogVar = CreateConVar( "sharpness_sv_nobigdamage", "0", FCVAR_ARCHIVE, "Stops 'sharp' damage from blowing up. Damage will clamp out at around ~200", 0, 1 )
+    local damageLogVar = CreateConVar( "sharpness_sv_nobigdamage", "0", FCVAR_ARCHIVE, "Stops 'sharp' damage from blowing up. Damage will clamp out at around ~275", 0, 1 )
     hook.Add( "prop_sharpness_predamage", "sharpness_damagemath.log", function( _sharpEnt, _takingDamage, hookDat, _sharpData )
         if not cvarMeta.GetBool( damageLogVar ) then return end
         hookDat.damage = math.log( hookDat.damage, crushMagicNum )
@@ -623,7 +623,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     takingDamage:TakeDamageInfo( dmgInfo )
 
     if doSelfDamageVar:GetBool() then -- for servers with simple prop damage, etc
-        local multiplier = 0.005
+        local multiplier = 0.008
         local selfDamage = damage * multiplier
         local selfDmgInfo = DamageInfo()
         selfDmgInfo:SetAttacker( sharpEnt )
@@ -684,12 +684,16 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
         end )
     elseif sharpData.sticks and sharpness >= 0.75 and speed > minSharpSpeed * 4 and damage > 25 then -- STICKING
+        sharpEntsTbl.sharpness_NextDealDamage = CurTime() + 0.15
         if sharpData.sticksIntoOnly and ( not takingDamagesMat or not sharpData.sticksIntoOnly[takingDamagesMat] ) then return end
         if currSharpDat.preCollideAng then
             sharpEnt:SetAngles( currSharpDat.preCollideAng )
 
         end
         PROP_SHARPNESS.HandlePropSticking( sharpEnt, takingDamage, sharpData, pointyDir )
+
+    else
+        sharpEntsTbl.sharpness_NextDealDamage = CurTime() + 0.15
 
     end
 end
