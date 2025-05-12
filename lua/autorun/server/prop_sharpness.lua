@@ -1,9 +1,10 @@
 
 local IsValid = IsValid
 local math = math
+local cvarMeta = FindMetaTable( "ConVar" )
+local entsMeta = FindMetaTable( "Entity" )
 
 do
-    local cvarMeta = FindMetaTable( "ConVar" )
 
     local blockProppushVar = CreateConVar( "sharpness_sv_proppushdamage", "1", FCVAR_ARCHIVE, "Do sharpness damage on stuff held/thrown by the physics gun?", 0, 1 )
     hook.Add( "prop_sharpness_blocksharpdamage", "sharpness_noplyproppushdamage", function( sharpEnt, damaged )
@@ -33,6 +34,7 @@ do
 end
 
 local doSelfDamageVar = CreateConVar( "sharpness_sv_selfdamage", "1", FCVAR_ARCHIVE, "Makes sharp props take a bit of 'dulling' damage when they poke stuff.", 0, 1 )
+local maxDamageVar = CreateConVar( "sharpness_sv_maxdamage", "-1", FCVAR_ARCHIVE, "Max damage per poke? Default unlimited damage.", -1, 999999999 )
 
 local debugVar = CreateConVar( "sharpness_sv_debug", "0", FCVAR_NONE, "enable developer 1 visualizers to help add sharp props" )
 local debugging = debugVar:GetBool()
@@ -40,8 +42,6 @@ cvars.AddChangeCallback( "sharpness_sv_debug", function()
     debugging = debugVar:GetBool()
 
 end, "asbool" )
-
-local entsMeta = FindMetaTable( "Entity" )
 
 local function dirToPos( startPos, endPos )
     if not startPos then return end
@@ -486,20 +486,38 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     local localPos = sharpData.localPos -- some specific part of the ent is sharp
     local localPosDist = sharpData.localPosDist
     local sharpPoint
-    if localPos and localPosDist then
-        sharpPoint = sharpEnt:LocalToWorld( localPos )
-        local takersNearest = takingDamage:NearestPoint( sharpPoint )
 
-        if debugging then
-            debugoverlay.Cross( sharpPoint, 5, 5, color_white, true )
-            debugoverlay.Line( takersNearest, sharpPoint, 5, color_white, true )
-            debugoverlay.Text( takersNearest, takersNearest:Distance( sharpPoint ), 5, false )
+    local worldPokeResult
+    if isWorld then
+        local trStart = localPos or dealingsCenter
+        worldPokeResult = util.TraceLine( {
+            start = trStart,
+            endpos = trStart + pointyDir * sharpEnt:GetModelRadius() * 2,
+            filter = sharpEnt,
+            mask = MASK_SOLID_BRUSHONLY,
+
+        } )
+    end
+
+    if localPos and localPosDist then
+        if isWorld then
+            if worldPokeResult.HitPos:Distance( localPos ) > localPosDist then return end
+
+        else
+            sharpPoint = sharpEnt:LocalToWorld( localPos )
+            local takersNearest = takingDamage:NearestPoint( sharpPoint )
+
+            if debugging then
+                debugoverlay.Cross( sharpPoint, 5, 5, color_white, true )
+                debugoverlay.Line( takersNearest, sharpPoint, 5, color_white, true )
+                debugoverlay.Text( takersNearest, takersNearest:Distance( sharpPoint ), 5, false )
+
+            end
+
+            local hitSomewhereDull = takersNearest:Distance( sharpPoint ) > localPosDist
+            if hitSomewhereDull then return end
 
         end
-
-        local hitSomewhereDull = takersNearest:Distance( sharpPoint ) > localPosDist
-        if hitSomewhereDull then return end
-
     end
 
     local isRagdoll = takingDamage:IsRagdoll()
@@ -511,21 +529,13 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     local overMin = speed - minSharpSpeed
     local damage = overMin * sharpness
 
-    local worldMatResult
     local sharpEntsMat, takingDamagesMat
 
     damage, sharpEntsMat = PROP_SHARPNESS.scaleDamageForEntsMaterial( sharpEnt, damage )
 
     if isWorld then
-        worldMatResult = util.TraceLine( {
-            start = localPos or dealingsCenter,
-            endpos = dealingsCenter + pointyDir * sharpEnt:GetModelRadius() * 2,
-            filter = sharpEnt,
-            mask = MASK_SOLID_BRUSHONLY,
-
-        } )
-        if worldMatResult.HitWorld then
-            takingDamagesMat = getMaterialFromString( worldMatResult.MatType )
+        if worldPokeResult.HitWorld then
+            takingDamagesMat = getMaterialFromString( worldPokeResult.MatType )
 
         end
     else
@@ -545,6 +555,12 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     damage = math.floor( damage )
     if damage <= 0 then return end
+
+    local maxDmg = cvarMeta.GetInt( maxDamageVar )
+    if maxDmg >= 0 then
+        damage = math.min( damage, maxDmg )
+
+    end
 
     if sharpData.impaleStrength then
         local color = takingDamage.bloodColorHitFix or takingDamage:GetBloodColor()
@@ -622,7 +638,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     takingDamage:TakeDamageInfo( dmgInfo )
 
-    if doSelfDamageVar:GetBool() then -- for servers with simple prop damage, etc
+    if cvarMeta.GetBool( doSelfDamageVar ) then -- for servers with simple prop damage, etc
         local multiplier = 0.008
         local selfDamage = damage * multiplier
         local selfDmgInfo = DamageInfo()
@@ -899,14 +915,14 @@ hook.Add( "GravGunPickupAllowed", "sharpness_unfreezestuck", function( ply, ent 
     if not ply:KeyPressed( IN_ATTACK2 ) then return end
     entsObj:EnableMotion( true )
     ent.sharpness_FrozenStuck = nil
-    ent.sharpness_NextDealDamage = CurTime() + 0.25
+    ent.sharpness_NextDealDamage = CurTime() + 0.5
 
 end )
 
 hook.Add( "OnPhysgunPickup", "sharpness_clearstuck", function( ply, ent )
     if not ent.sharpness_FrozenStuck then return end
     ent.sharpness_FrozenStuck = nil
-    ent.sharpness_NextDealDamage = CurTime() + 0.25
+    ent.sharpness_NextDealDamage = CurTime() + 0.5
 
 end )
 
