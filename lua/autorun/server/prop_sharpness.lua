@@ -486,10 +486,14 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     local localPos = sharpData.localPos -- some specific part of the ent is sharp
     local localPosDist = sharpData.localPosDist
     local sharpPoint
+    if localPos then
+        sharpPoint = sharpEnt:LocalToWorld( localPos )
+
+    end
 
     local worldPokeResult
     if isWorld then
-        local trStart = localPos or dealingsCenter
+        local trStart = sharpPoint or dealingsCenter
         worldPokeResult = util.TraceLine( {
             start = trStart,
             endpos = trStart + pointyDir * sharpEnt:GetModelRadius() * 2,
@@ -499,24 +503,24 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
         } )
     end
 
-    if localPos and localPosDist then
+    if sharpPoint and localPosDist then
+        if debugging then
+            debugoverlay.Cross( sharpPoint, 5, 5, color_white, true )
+
+        end
         if isWorld then
-            if worldPokeResult.HitPos:Distance( localPos ) > localPosDist then return end
+            if worldPokeResult.HitPos:Distance( sharpPoint ) > localPosDist then return end
 
         else
-            sharpPoint = sharpEnt:LocalToWorld( localPos )
             local takersNearest = takingDamage:NearestPoint( sharpPoint )
 
+            local hitSomewhereDull = takersNearest:Distance( sharpPoint ) > localPosDist
+            if hitSomewhereDull then return end
             if debugging then
-                debugoverlay.Cross( sharpPoint, 5, 5, color_white, true )
                 debugoverlay.Line( takersNearest, sharpPoint, 5, color_white, true )
                 debugoverlay.Text( takersNearest, takersNearest:Distance( sharpPoint ), 5, false )
 
             end
-
-            local hitSomewhereDull = takersNearest:Distance( sharpPoint ) > localPosDist
-            if hitSomewhereDull then return end
-
         end
     end
 
@@ -668,7 +672,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
         else
             local nearestInsideResult = util.TraceHull( {
-                start = localPos or dealingsCenter,
+                start = sharpPoint or dealingsCenter,
                 endpos = dealingsCenter + pointyDir * sharpEnt:GetModelRadius() * 2,
                 filter = sharpEnt,
                 mask = MASK_SOLID_BRUSHONLY,
