@@ -35,6 +35,7 @@ end
 
 local doSelfDamageVar = CreateConVar( "sharpness_sv_selfdamage", "1", FCVAR_ARCHIVE, "Makes sharp props take a bit of 'dulling' damage when they poke stuff.", 0, 1 )
 local maxDamageVar = CreateConVar( "sharpness_sv_maxdamage", "-1", FCVAR_ARCHIVE, "Max damage per poke? Default unlimited damage.", -1, 999999999 )
+local maxDamageHeldVar = CreateConVar( "sharpness_sv_maxdamage_whenheld", "-1", FCVAR_ARCHIVE, "Max sharpness damage when being held?", -1, 999999999 )
 
 local debugVar = CreateConVar( "sharpness_sv_debug", "0", FCVAR_NONE, "enable developer 1 visualizers to help add sharp props" )
 local debugging = debugVar:GetBool()
@@ -566,6 +567,12 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     end
 
+    local maxDmgHeld = cvarMeta.GetInt( maxDamageHeldVar )
+    if maxDmgHeld >= 0 and IsValid( sharpEnt.sharpness_Holder ) then
+        damage = math.min( damage, maxDmgHeld )
+
+    end
+
     if sharpData.impaleStrength then
         local color = takingDamage.bloodColorHitFix or takingDamage:GetBloodColor()
 
@@ -643,7 +650,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     takingDamage:TakeDamageInfo( dmgInfo )
 
     if cvarMeta.GetBool( doSelfDamageVar ) then -- for servers with simple prop damage, etc
-        local multiplier = 0.008
+        local multiplier = 0.05
         local selfDamage = damage * multiplier
         local selfDmgInfo = DamageInfo()
         selfDmgInfo:SetAttacker( sharpEnt )
