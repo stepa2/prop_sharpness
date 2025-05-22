@@ -71,6 +71,13 @@ local models = {
     ["models/props_medieval/portcullis.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
     ["models/props_medieval/portcullis_small.mdl"] = PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE,
 
+    ["models/weapons/w_models/w_knife.mdl"] = PROP_SHARPNESS.generic_SUPERSHARP_UPWARD_SPIKE,
+    ["models/weapons/w_models/w_shovel.mdl"] = PROP_SHARPNESS.sharpDataWithAppended( PROP_SHARPNESS.generic_SUPERSHARP_UPWARD_SPIKE, {
+        startSpeed = PROP_SHARPNESS.SPEED_BLUNT,
+        sharpness = PROP_SHARPNESS.SHARPNESS_BLUNT,
+        impaleStrength = PROP_SHARPNESS.IMPALE_MEDIUM,
+    } ),
+
 }
 
 PROP_SHARPNESS.AddModels( models )

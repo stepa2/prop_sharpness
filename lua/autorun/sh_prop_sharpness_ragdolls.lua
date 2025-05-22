@@ -337,36 +337,38 @@ local function handle( died, rag )
 
 end
 
-hook.Add( "CreateClientsideRagdoll", "prop_sharpness_csideskewer", function( died, rag )
-    local bloodColor = died:GetBloodColor()
-    if bloodColor and bloodColor >= 0 then
-        rag.sharpness_BloodColor = bloodColor
+if CLIENT then
+    hook.Add( "CreateClientsideRagdoll", "prop_sharpness_csideskewer", function( died, rag )
+        local bloodColor = died:GetBloodColor()
+        if bloodColor and bloodColor >= 0 then
+            rag.sharpness_BloodColor = bloodColor
 
-    end
+        end
 
-    timer.Simple( 0, function()
-        if not IsValid( died ) then return end
-        if not IsValid( rag ) then return end
-        rag.sharpness_Corpse = true
-
-        if handle( died, rag ) then return end -- skewered em
-
-        timer.Simple( math.Rand( 0.05, 0.15 ), function() -- didnt skewer, try again
+        timer.Simple( 0, function()
             if not IsValid( died ) then return end
             if not IsValid( rag ) then return end
+            rag.sharpness_Corpse = true
 
             if handle( died, rag ) then return end -- skewered em
 
-            timer.Simple( math.Rand( 0.05, 0.1 ), function() -- didnt skewer, try again
+            timer.Simple( math.Rand( 0.05, 0.15 ), function() -- didnt skewer, try again
                 if not IsValid( died ) then return end
                 if not IsValid( rag ) then return end
 
-                handle( died, rag )
+                if handle( died, rag ) then return end -- skewered em
 
+                timer.Simple( math.Rand( 0.05, 0.1 ), function() -- didnt skewer, try again
+                    if not IsValid( died ) then return end
+                    if not IsValid( rag ) then return end
+
+                    handle( died, rag )
+
+                end )
             end )
         end )
     end )
-end )
+end
 
 hook.Add( "CreateEntityRagdoll", "prop_sharpness_serverskewer", function( died, rag )
     local bloodColor = died.bloodColorHitFix or died:GetBloodColor()

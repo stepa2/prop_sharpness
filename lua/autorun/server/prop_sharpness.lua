@@ -3,6 +3,7 @@ local IsValid = IsValid
 local math = math
 local cvarMeta = FindMetaTable( "ConVar" )
 local entsMeta = FindMetaTable( "Entity" )
+local physMeta = FindMetaTable( "PhysObj" )
 
 do
 
@@ -57,6 +58,7 @@ local string_lower = string.lower
 local string_find = string.find
 
 local materialAliases = {
+    ["grass"] = "dirt",
     ["antlion"] = "flesh",
     ["plaster"] = "generic",
     ["concrete"] = "generic",
@@ -64,7 +66,9 @@ local materialAliases = {
 }
 
 local potentialMaterials = {
+    "dirt",
     "wood",
+    "grass",
     "flesh",
     "antlion",
     "plastic",
@@ -118,7 +122,7 @@ local function getMaterialForEnt( ent )
     end
 
     if not theMat then
-        local entsObj = ent:GetPhysicsObject()
+        local entsObj = entsMeta.GetPhysicsObject( ent )
         if IsValid( entsObj ) then
             stringToCheck = entsObj:GetMaterial()
 
@@ -159,6 +163,7 @@ local damageScales = {
     ["flesh"] = 1,
     ["plastic"] = 0.8,
     ["generic"] = 0.25, -- metal, concrete, etc
+    ["dirt"] = 2,
 
 }
 
@@ -265,9 +270,57 @@ PROP_SHARPNESS.SHARPNESS_DULL = 0.5
 PROP_SHARPNESS.SPEED_BLUNT = 125
 PROP_SHARPNESS.SHARPNESS_BLUNT = 0.05
 
-PROP_SHARPNESS.SPEED_CRUSH = 200
+PROP_SHARPNESS.SPEED_CRUSH = 300
 PROP_SHARPNESS.SHARPNESS_CRUSH = 0.5
 
+
+local dirCache = {}
+
+function PROP_SHARPNESS.sharpDataWithDirection( data, newDir, invertDir )
+    local key = tostring( data ) .. tostring( newDir ) .. tostring( invertDir )
+
+    local cached = dirCache[key]
+    if cached then return cached end -- table.Copy is heavy on lua perf and memory
+
+    local new = table.Copy( data )
+    new.dirFunc = newDir
+    new.invertDir = invertDir
+
+    dirCache[key] = new
+    return new
+
+end
+
+local appendCache = {}
+
+function PROP_SHARPNESS.sharpDataWithAppended( data, appendData )
+    local key = tostring( data ) .. tostring( appendData )
+
+    local cached = appendCache[key]
+    if cached then return cached end
+
+    local new = table.Copy( data )
+    for appendKey, appendVal in pairs( appendData ) do
+        new[appendKey] = appendVal
+
+    end
+
+    appendCache[key] = new
+    appendData = nil
+    return new
+
+end
+
+
+PROP_SHARPNESS.generic_SUPERSHARP_UPWARD_SPIKE = {
+    typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
+    dirFunc = entsMeta.GetUp,
+    startSpeed = PROP_SHARPNESS.SPEED_SUPERSHARP,
+    sharpness = PROP_SHARPNESS.SHARPNESS_SUPERSHARP,
+    dmgSounds = PROP_SHARPNESS.skewerSnd,
+    impaleStrength = PROP_SHARPNESS.IMPALE_STRONG,
+
+}
 
 PROP_SHARPNESS.generic_SHARP_UPWARD_SPIKE = {
     typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
@@ -278,9 +331,6 @@ PROP_SHARPNESS.generic_SHARP_UPWARD_SPIKE = {
     impaleStrength = PROP_SHARPNESS.IMPALE_STRONG,
 
 }
-
-PROP_SHARPNESS.generic_SHARP_DOWNWARD_SPIKE = table.Copy( PROP_SHARPNESS.generic_SHARP_UPWARD_SPIKE )
-PROP_SHARPNESS.generic_SHARP_DOWNWARD_SPIKE.invertDir = true
 
 PROP_SHARPNESS.generic_BLUNT_UPWARD_SPIKE = {
     typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
@@ -355,9 +405,6 @@ PROP_SHARPNESS.generic_DUALSHARP_REBAR = { -- same as ibeam, but less intense so
     sticks = true,
 
 }
-PROP_SHARPNESS.generic_DUALSHARPFORWARD_REBAR = table.Copy( PROP_SHARPNESS.generic_DUALSHARP_REBAR )
-PROP_SHARPNESS.generic_DUALSHARPFORWARD_REBAR.dirFunc = entsMeta.GetForward
-
 
 PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS = { -- takes little speed, and does little damage
     typeTransformer = PROP_SHARPNESS.SHARP_DUALPOINTY,
@@ -365,10 +412,10 @@ PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS = { -- takes little speed, and do
     startSpeed = PROP_SHARPNESS.SPEED_DULL,
     sharpness = PROP_SHARPNESS.SHARPNESS_BLUNT,
     dmgSounds = PROP_SHARPNESS.skewerSndNonMetallic,
-    maxDamage = 25,
+    maxDamage = "mass", -- makes maxdamage based off the ent's mass, 2x of mass if frozen, 1x if not
     impaleStrength = PROP_SHARPNESS.IMPALE_MEDIUM,
     sticks = true,
-    sticksIntoOnly = { flesh = true },
+    sticksIntoOnly = { flesh = true, wood = true, dirt = true },
     stickSounds = PROP_SHARPNESS.woodStickSounds,
 
 }
@@ -376,9 +423,21 @@ PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS = { -- takes little speed, and do
 PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS = table.Copy( PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS )
 PROP_SHARPNESS.generic_UPSHARP_WOODSPLINTERS.typeTransformer = PROP_SHARPNESS.SHARP_POINTY
 
-PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS = table.Copy( PROP_SHARPNESS.generic_DUALSHARP_WOODSPLINTERS )
-PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS.typeTransformer = PROP_SHARPNESS.SHARP_POINTY
-PROP_SHARPNESS.generic_DOWNSHARP_WOODSPLINTERS.invertDir = true
+PROP_SHARPNESS.generic_PLANARFORW_CRUSHCUTTER = {
+    typeTransformer = PROP_SHARPNESS.SHARP_PLANAR,
+    dirFunc = entsMeta.GetForward,
+    invertDir = nil,
+    startSpeed = PROP_SHARPNESS.SPEED_CRUSH,
+    sharpness = PROP_SHARPNESS.SHARPNESS_BLUNT,
+    dmgSounds = PROP_SHARPNESS.bashingSound,
+    impaleStrength = PROP_SHARPNESS.IMPALE_MEDIUM,
+    sticks = true,
+    canSlice = true,
+
+}
+PROP_SHARPNESS.generic_PLANARFORW_BLUNTCUTTER = table.Copy( PROP_SHARPNESS.generic_PLANARFORW_CRUSHCUTTER )
+PROP_SHARPNESS.generic_PLANARFORW_BLUNTCUTTER.startSpeed = PROP_SHARPNESS.SPEED_BLUNT
+
 
 function PROP_SHARPNESS.AddModels( models )
     local mdlData = PROP_SHARPNESS.ModelData
@@ -540,16 +599,11 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     if isWorld then
         if worldPokeResult.HitWorld then
-            takingDamagesMat = getMaterialFromString( worldPokeResult.MatType )
+            takingDamagesMat = getMaterialFromString( util.GetSurfacePropName( worldPokeResult.SurfaceProps ) )
 
         end
     else
         damage, takingDamagesMat = PROP_SHARPNESS.scaleDamageForEntsMaterial( takingDamage, damage ) -- so we dont instakill glide cars, etc
-
-    end
-
-    if sharpData.maxDamage then
-        damage = math.min( damage, sharpData.maxDamage )
 
     end
 
@@ -560,6 +614,30 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     damage = math.floor( damage )
     if damage <= 0 then return end
+
+    local maxDamage = sharpData.maxDamage
+    if maxDamage then
+        if isstring( maxDamage ) and maxDamage == "mass" then
+            local sharpEntsObj = entsMeta.GetPhysicsObject( sharpEnt )
+            if IsValid( sharpEntsObj ) then
+                local mass = physMeta.GetMass( sharpEntsObj )
+                local frozen = not physMeta.IsMotionEnabled( sharpEntsObj )
+                if frozen then
+                    maxDamage = mass * 2
+
+                else
+                    maxDamage = mass
+
+                end
+            else
+                maxDamage = nil
+            end
+        end
+        if maxDamage then
+            damage = math.min( damage, maxDamage )
+
+        end
+    end
 
     local maxDmg = cvarMeta.GetInt( maxDamageVar )
     if maxDmg >= 0 then
@@ -627,6 +705,9 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
         elseif IsValid( sharpEnt:GetCreator() ) then
             attacker = sharpEnt:GetCreator()
 
+        elseif IsValid( sharpEnt:GetOwner() ) then
+            attacker = sharpEnt:GetOwner()
+
         end
     end
     if not attacker then
@@ -643,7 +724,7 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     dmgInfo:SetDamageForce( dmgVel )
 
     if debugging then
-        print( "SHARPNESS: " .. sharpEnt:GetModel() .. " dealt " .. math.Round( damage ) .. " damage to", takingDamage )
+        print( "SHARPNESS: " .. sharpEnt:GetModel() .. " with mat " .. sharpEntsMat .. " dealt " .. math.Round( damage ) .. " damage to", takingDamage, "of mat " .. takingDamagesMat )
 
     end
 
@@ -694,8 +775,9 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
     end
 
+    sharpEntsTbl.sharpness_NextDealDamage = CurTime() + 0.15
+
     if alive or isRagdoll then
-        sharpEntsTbl.sharpness_NextDealDamage = CurTime() + 0.15
         local paths = sharpData.dmgSounds
         local path = paths[math.random( 1, #paths )]
         local pitch = math.Clamp( 120 - ( damage / 2 ), 50, 120 )
@@ -710,18 +792,17 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
             PROP_SHARPNESS.BloodSpray( takingDamage, nearest, dir + VectorRand(), math.Clamp( damage / math.random( 1, 10 ), 4, 10 ) )
 
         end )
-    elseif sharpData.sticks and sharpness >= 0.75 and speed > minSharpSpeed * 4 and damage > 25 then -- STICKING
-        sharpEntsTbl.sharpness_NextDealDamage = CurTime() + 0.15
-        if sharpData.sticksIntoOnly and ( not takingDamagesMat or not sharpData.sticksIntoOnly[takingDamagesMat] ) then return end
-        if currSharpDat.preCollideAng then
-            sharpEnt:SetAngles( currSharpDat.preCollideAng )
+    elseif sharpData.sticks then -- STICKING
+        local goodStick = speed > minSharpSpeed * 4
+        local scriptedStick = sharpData.sticksIntoOnly and takingDamagesMat and sharpData.sticksIntoOnly[takingDamagesMat]
+        if ( scriptedStick and goodStick ) or ( sharpness >= 0.75 and damage > 25 and goodStick ) then
+            if currSharpDat.preCollideAng then
+                sharpEnt:SetAngles( currSharpDat.preCollideAng )
+
+            end
+            PROP_SHARPNESS.HandlePropSticking( sharpEnt, takingDamage, sharpData, pointyDir )
 
         end
-        PROP_SHARPNESS.HandlePropSticking( sharpEnt, takingDamage, sharpData, pointyDir )
-
-    else
-        sharpEntsTbl.sharpness_NextDealDamage = CurTime() + 0.15
-
     end
 end
 
@@ -823,13 +904,15 @@ hook.Add( "GetFallDamage", "prop_sharpness_sharplanding", function( ply, speed )
 end )
 
 
+local vec_zero = Vector( 0, 0, 0 )
+
 function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
     local freeze
     local weld
     local nudgeThem
     local nudgeUs
 
-    local thingsObj = thing:GetPhysicsObject()
+    local thingsObj = entsMeta.GetPhysicsObject( thing )
     local intoObj
 
     if into:IsWorld() then
@@ -837,7 +920,7 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
         nudgeUs = thingsObj:IsMotionEnabled()
 
     else
-        intoObj = into:GetPhysicsObject()
+        intoObj = entsMeta.GetPhysicsObject( into )
         if IsValid( intoObj ) then
             local intosFrozen = not intoObj:IsMotionEnabled()
             local thingsFrozen = not thingsObj:IsMotionEnabled()
@@ -859,30 +942,20 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
         end
     end
 
-    if nudgeUs then
-        thing:SetPos( thing:GetPos() + dir * math.random( 10, 15 ) )
 
-    end
-    if nudgeThem then
-        into:SetPos( into:GetPos() + -dir * math.random( 10, 15 ) )
+    if not ( freeze or weld ) then
+        return
 
     end
 
-    if freeze or weld then
-        local paths = sharpData.stickSounds
-        local path = paths[math.random( 1, #paths )]
-        local pitch = math.random( 95, 105 )
-        thing:EmitSound( path, 80, pitch, 1 )
+    local nudgeSize = math.random( 10, 15 )
 
-    end
+    local paths = sharpData.stickSounds
+    local path = paths[math.random( 1, #paths )]
+    local pitch = math.random( 95, 105 )
+    thing:EmitSound( path, 80, pitch, 1 )
 
     if freeze then
-        thingsObj:EnableMotion( false )
-        thing.sharpness_FrozenStuck = true
-
-    end
-
-    if weld then
         local block, freezeInstead = hook.Run( "prop_sharpness_blockweld", thing, into )
         if block then
             weld = nil
@@ -894,9 +967,52 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
         end
     end
 
-    if weld then
-        local strength = math.min( thingsObj:GetMass() * 100, intoObj and intoObj:GetMass() * 100 or math.huge )
+    local strength = math.min( thingsObj:GetMass() * 100, intoObj and intoObj:GetMass() * 100 or math.huge )
 
+    if freeze then
+        local time
+        local newWeld
+        if #constraint.GetTable( thing ) > 0 then -- if we're part of a contraption, weld then freeze later
+            -- welding to world, any sensible prop protection will handle this but here's a hook anyway
+            local block = hook.Run( "prop_sharpness_blockworldweld", thing, into )
+            if not block then
+                strength = strength / 2
+                newWeld = constraint.Weld( thing, game.GetWorld(), 0, 0, strength, false )
+
+            end
+        end
+
+        local wasWeld
+
+        if not newWeld or not IsValid( newWeld ) then
+            time = 0 -- freeze now
+
+        else
+            time = 10 -- kill constraint and freeze ent if its forgotten about
+            wasWeld = true
+            nudgeSize = nudgeSize / 4
+            thing:ForcePlayerDrop()
+
+            local noCollide = constraint.NoCollide( thing, game.GetWorld(), 0, 0, true )
+            newWeld:DeleteOnRemove( noCollide )
+            hook.Run( "prop_sharpness_createweld", newWeld, "prop" )
+
+            thingsObj:SetVelocity( vec_zero )
+
+        end
+
+        timer.Simple( time, function()
+            if not IsValid( thing ) then return end
+            if not IsValid( thingsObj ) then return end -- might happen 
+            if thingsObj:GetVelocity():Length() > 15 then return end -- dont break whatever is making this move
+            if wasWeld and not IsValid( newWeld ) then return end
+
+            thing.sharpness_FrozenStuck = true
+            thingsObj:EnableMotion( false )
+            SafeRemoveEntity( newWeld )
+
+        end )
+    elseif weld then
         local newWeld = constraint.Weld( thing, into, 0, 0, strength, false )
         if not IsValid( newWeld ) then return end
 
@@ -914,12 +1030,22 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
             thingsObj:SetVelocity( intoObj:GetVelocity() )
 
         end )
+
+    end
+
+    if nudgeUs then
+        thing:SetPos( thing:GetPos() + dir * nudgeSize )
+
+    end
+    if nudgeThem then
+        into:SetPos( into:GetPos() + -dir * nudgeSize )
+
     end
 end
 
 hook.Add( "GravGunPickupAllowed", "sharpness_unfreezestuck", function( ply, ent )
     if not ent.sharpness_FrozenStuck then return end
-    local entsObj = ent:GetPhysicsObject()
+    local entsObj = entsMeta.GetPhysicsObject( ent )
     if not IsValid( entsObj ) then return end
     if entsObj:IsMotionEnabled() then ent.sharpness_FrozenStuck = nil return end
 
@@ -939,7 +1065,7 @@ end )
 
 
 local function manageThrownSharpThing( thrower, thrown, throwType ) -- GIVE CORRECT ATTACKER
-    local thrownsObj = thrown:GetPhysicsObject()
+    local thrownsObj = entsMeta.GetPhysicsObject( thrown )
     if not IsValid( thrownsObj ) then return end
     if not thrownsObj:IsMotionEnabled() then return end
 
