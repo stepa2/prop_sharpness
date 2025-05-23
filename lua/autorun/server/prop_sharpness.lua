@@ -861,9 +861,13 @@ do
             end
 
             if ent:IsScripted() then
+                local hasOldCollide = isfunction( ent.PhysicsCollide )
                 ent.sharpness_OldPhysicsCollide = ent.PhysicsCollide -- kinda hacky
                 function ent:PhysicsCollide( colData, collider )
-                    self:sharpness_OldPhysicsCollide( colData, collider )
+                    if hasOldCollide then
+                        self:sharpness_OldPhysicsCollide( colData, collider )
+
+                    end
                     handleSharpCollide( self, colData, sharpData )
 
                 end
