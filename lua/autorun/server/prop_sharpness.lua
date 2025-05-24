@@ -976,7 +976,7 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
     if freeze then
         local time
         local newWeld
-        if #constraint.GetTable( thing ) > 0 then -- if we're part of a contraption, weld then freeze later
+        if #constraint.GetTable( thing ) > 1 then -- if we're part of a contraption, weld then freeze later
             -- welding to world, any sensible prop protection will handle this but here's a hook anyway
             local block = hook.Run( "prop_sharpness_blockworldweld", thing, into )
             if not block then
@@ -996,13 +996,20 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
 
             local noCollide = constraint.NoCollide( thing, game.GetWorld(), 0, 0, true )
             newWeld:DeleteOnRemove( noCollide )
-            hook.Run( "prop_sharpness_createweld", newWeld, "prop" )
+            hook.Run( "prop_sharpness_createweld", newWeld, "fakefrozen" )
+            if debugging then
+                print( "SHARPNESS: made fakefreezing world weld" )
+
+            end
 
             thingsObj:SetVelocity( vec_zero )
 
         else
             time = 0 -- freeze now
+            if debugging then
+                print( "SHARPNESS: froze sharp obj" )
 
+            end
         end
 
         timer.Simple( time, function()
@@ -1027,6 +1034,10 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
         newWeld:DeleteOnRemove( noCollide )
 
         hook.Run( "prop_sharpness_createweld", newWeld, "prop" )
+        if debugging then
+            print( "SHARPNESS: made prop weld" )
+
+        end
         timer.Simple( 0, function()
             if not IsValid( thingsObj ) then return end
             if not IsValid( intoObj ) then return end
@@ -1034,7 +1045,6 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
             thingsObj:SetVelocity( intoObj:GetVelocity() )
 
         end )
-
     end
 
     if nudgeUs then
