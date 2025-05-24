@@ -165,7 +165,7 @@ function PROP_SHARPNESS.skewerRagdoll( rag, impaledOn, strength, forcedPoint, bl
     stuffImpaled[rag] = true
 
     if SERVER then
-        local block = hook.Run( "prop_sharpness_blockweld", rag, impaledOn )
+        local block = hook.Run( "prop_sharpness_blockweld", impaledOn, rag )
         if block then return end
 
         local weld = constraint.Weld( rag, impaledOn, bestBone, 0, strength, true, false )

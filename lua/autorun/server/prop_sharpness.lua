@@ -959,7 +959,7 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
     local pitch = math.random( 95, 105 )
     thing:EmitSound( path, 80, pitch, 1 )
 
-    if freeze then
+    if weld then -- check if we can do this weld
         local block, freezeInstead = hook.Run( "prop_sharpness_blockweld", thing, into )
         if block then
             weld = nil
@@ -988,10 +988,7 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
 
         local wasWeld
 
-        if not newWeld or not IsValid( newWeld ) then
-            time = 0 -- freeze now
-
-        else
+        if newWeld and IsValid( newWeld ) then
             time = 10 -- kill constraint and freeze ent if its forgotten about
             wasWeld = true
             nudgeSize = nudgeSize / 4
@@ -1003,13 +1000,16 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
 
             thingsObj:SetVelocity( vec_zero )
 
+        else
+            time = 0 -- freeze now
+
         end
 
         timer.Simple( time, function()
             if not IsValid( thing ) then return end
             if not IsValid( thingsObj ) then return end -- might happen 
             if thingsObj:GetVelocity():Length() > 15 then return end -- dont break whatever is making this move
-            if wasWeld and not IsValid( newWeld ) then return end
+            if wasWeld and not IsValid( newWeld ) then return end -- weld broke
 
             thing.sharpness_FrozenStuck = true
             thingsObj:EnableMotion( false )
