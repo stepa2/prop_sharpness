@@ -1015,7 +1015,7 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
         timer.Simple( time, function()
             if not IsValid( thing ) then return end
             if not IsValid( thingsObj ) then return end -- might happen 
-            if thingsObj:GetVelocity():Length() > 15 then return end -- dont break whatever is making this move
+            if time ~= 0 and thingsObj:GetVelocity():Length() > 15 then return end -- dont break whatever is making this move
             if wasWeld and not IsValid( newWeld ) then return end -- weld broke
 
             thing.sharpness_FrozenStuck = true
