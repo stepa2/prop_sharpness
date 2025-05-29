@@ -976,7 +976,7 @@ function PROP_SHARPNESS.HandlePropSticking( thing, into, sharpData, dir )
     if freeze then
         local time
         local newWeld
-        if #constraint.GetTable( thing ) > 1 then -- if we're part of a contraption, weld then freeze later
+        if #constraint.GetTable( thing ) >= 1 then -- if we're part of a contraption, weld then freeze later
             -- welding to world, any sensible prop protection will handle this but here's a hook anyway
             local block = hook.Run( "prop_sharpness_blockworldweld", thing, into )
             if not block then
