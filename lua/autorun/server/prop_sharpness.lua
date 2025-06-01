@@ -438,40 +438,69 @@ PROP_SHARPNESS.generic_PLANARFORW_CRUSHCUTTER = {
 PROP_SHARPNESS.generic_PLANARFORW_BLUNTCUTTER = table.Copy( PROP_SHARPNESS.generic_PLANARFORW_CRUSHCUTTER )
 PROP_SHARPNESS.generic_PLANARFORW_BLUNTCUTTER.startSpeed = PROP_SHARPNESS.SPEED_BLUNT
 
+local function ValidateSharpnessData(data, mdl, idx)
+    local errprefix = "SHARPNESS: Can't add " .. mdl
+    if idx ~= nil then
+        errprefix = errprefix.." ["..tostring(idx).."]"
+    end
+    errprefix = errprefix..", "
 
+
+    if not data.typeTransformer or not isfunction( data.typeTransformer ) then
+        error( errprefix.."invalid .typeTransformer" )
+
+    end
+    if not data.dirFunc or not isfunction( data.typeTransformer ) then
+        error( errprefix.."invalid .dirFunc" )
+
+    end
+    if not data.startSpeed or not isnumber( data.startSpeed ) then
+        error( errprefix.."invalid .startSpeed" )
+
+    end
+    if not data.sharpness or not isnumber( data.sharpness ) then
+        error( errprefix.."invalid .sharpness" )
+
+    end
+    if not data.dmgSounds or not istable( data.dmgSounds ) then
+        error( errprefix.."invalid .dmgSounds" )
+
+    end
+    if data.localPosDist and not isnumber( data.localPosDist ) then
+        error( errprefix.."invalid .localPosDist" )
+
+    end
+    if data.localPos and not isvector( data.localPos ) then
+        error( errprefix.."invalid .localPos" )
+    end
+end
+
+local function MakeSharpnessDataEntry(entries)
+    local minStartSpeed = 0
+    for _, entry in ipairs(entries) do
+        local sp = entry.startSpeed
+        if sp > minStartSpeed then minStartSpeed = sp end
+    end
+
+    return {
+        minStartSpeed = minStartSpeed,
+        entries = entries
+    }
+end
+
+-- Format: table(modelname: string, SharpnessData | array(SharpnessData))
 function PROP_SHARPNESS.AddModels( models )
     local mdlData = PROP_SHARPNESS.ModelData
     for mdl, data in pairs( models ) do
-        if not data.typeTransformer or not isfunction( data.typeTransformer ) then
-            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .typeTransformer" )
-
+        if data[1] == nil then
+            ValidateSharpnessData(data, mdl)
+            mdlData[mdl] = MakeSharpnessDataEntry({data})
+        else
+            for i, entry in ipairs(data) do
+                ValidateSharpnessData(entry, mdl, i)
+            end
+            mdldata[mdl] = MakeSharpnessDataEntry(data)
         end
-        if not data.dirFunc or not isfunction( data.typeTransformer ) then
-            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .dirFunc" )
-
-        end
-        if not data.startSpeed or not isnumber( data.startSpeed ) then
-            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .startSpeed" )
-
-        end
-        if not data.sharpness or not isnumber( data.sharpness ) then
-            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .sharpness" )
-
-        end
-        if not data.dmgSounds or not istable( data.dmgSounds ) then
-            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .dmgSounds" )
-
-        end
-        if data.localPosDist and not isnumber( data.localPosDist ) then
-            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .localPosDist" )
-
-        end
-        if data.localPos and not isvector( data.localPos ) then
-            error( "SHARPNESS: Can't add " .. mdl .. ", invalid .localPos" )
-
-        end
-        mdlData[mdl] = data
-
     end
 end
 
@@ -509,19 +538,7 @@ end )
 local sparkClipMaxs = Vector( 1, 1, 1 )
 local sparkClipMins = -sparkClipMaxs
 
-function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDamage )
-    local isWorld
-    if not IsValid( takingDamage ) then
-        if takingDamage and takingDamage:IsWorld() then
-            isWorld = true-- we stick into the world...
-
-        else
-            return
-
-        end
-    end
-
-    if hook.Run( "prop_sharpness_blocksharpdamage", sharpEnt, takingDamage ) then return end
+function PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, takingDamage, isWorld)
 
     local dirRef = sharpData.dirFunc( sharpEnt )
     if sharpData.invertDir then
@@ -724,7 +741,8 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     dmgInfo:SetDamageForce( dmgVel )
 
     if debugging then
-        print( "SHARPNESS: " .. sharpEnt:GetModel() .. " with mat " .. sharpEntsMat .. " dealt " .. math.Round( damage ) .. " damage to", takingDamage, "of mat " .. takingDamagesMat )
+        print( "SHARPNESS: " .. sharpEnt:GetModel() .. " with mat " .. sharpEntsMat .. " dealt " .. math.Round( damage ) .. 
+            " damage to", takingDamage, "of mat " .. (takingDamagesMat or "<nil>") )
 
     end
 
@@ -804,11 +822,34 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
 
         end
     end
+
+    return true
+end
+
+function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDamage )
+    local isWorld
+    if not IsValid( takingDamage ) then
+        if takingDamage and takingDamage:IsWorld() then
+            isWorld = true-- we stick into the world...
+
+        else
+            return
+
+        end
+    end
+
+    if hook.Run( "prop_sharpness_blocksharpdamage", sharpEnt, takingDamage ) then return end
+
+    for _, sharpEntry in ipairs(sharpData) do
+        if PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, takingDamage, isWorld) then
+            break
+        end
+    end
 end
 
 do
     local function handleSharpCollide( sharpEnt, colData, sharpData )
-        local minSharpSpeed = sharpData.startSpeed
+        local minSharpSpeed = sharpData.minStartSpeed
         local speed = colData.Speed
         if speed < minSharpSpeed then return end
 
