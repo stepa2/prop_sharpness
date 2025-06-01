@@ -476,10 +476,10 @@ local function ValidateSharpnessData(data, mdl, idx)
 end
 
 local function MakeSharpnessDataEntry(entries)
-    local minStartSpeed = 0
+    local minStartSpeed = math.huge
     for _, entry in ipairs(entries) do
         local sp = entry.startSpeed
-        if sp > minStartSpeed then minStartSpeed = sp end
+        if sp < minStartSpeed then minStartSpeed = sp end
     end
 
     return {
@@ -499,7 +499,7 @@ function PROP_SHARPNESS.AddModels( models )
             for i, entry in ipairs(data) do
                 ValidateSharpnessData(entry, mdl, i)
             end
-            mdldata[mdl] = MakeSharpnessDataEntry(data)
+            mdlData[mdl] = MakeSharpnessDataEntry(data)
         end
     end
 end
@@ -540,14 +540,20 @@ local sparkClipMins = -sparkClipMaxs
 
 function PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, takingDamage, isWorld)
 
-    local dirRef = sharpData.dirFunc( sharpEnt )
-    if sharpData.invertDir then
+    local dirRef = sharpEntry.dirFunc( sharpEnt )
+    if sharpEntry.invertDir then
         dirRef = -dirRef
 
     end
 
-    local forCollide, pointyDir = sharpData.typeTransformer( sharpEnt, dirRef, currSharpDat.collisonNormal )
-    local sharpness = sharpData.sharpness * forCollide
+    local minSharpSpeed = sharpEntry.startSpeed    
+    local dmgVel = currSharpDat.oldVel
+    local speed = currSharpDat.speed or currSharpDat.oldVel:Length()
+
+    if speed < minSharpSpeed then return end
+
+    local forCollide, pointyDir = sharpEntry.typeTransformer( sharpEnt, dirRef, currSharpDat.collisonNormal )
+    local sharpness = sharpEntry.sharpness * forCollide
     if sharpness <= 0 then return end
 
     if debugging then
@@ -560,8 +566,8 @@ function PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, 
     local takingsCenter = takingDamage:WorldSpaceCenter()
     local nearest = sharpEnt:NearestPoint( takingsCenter )
 
-    local localPos = sharpData.localPos -- some specific part of the ent is sharp
-    local localPosDist = sharpData.localPosDist
+    local localPos = sharpEntry.localPos -- some specific part of the ent is sharp
+    local localPosDist = sharpEntry.localPosDist
     local sharpPoint
     if localPos then
         sharpPoint = sharpEnt:LocalToWorld( localPos )
@@ -603,9 +609,6 @@ function PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, 
 
     local isRagdoll = takingDamage:IsRagdoll()
     local alive = takingDamage:IsPlayer() or takingDamage:IsNPC() or takingDamage:IsNextBot()
-    local minSharpSpeed = sharpData.startSpeed
-    local dmgVel = currSharpDat.oldVel
-    local speed = currSharpDat.speed or currSharpDat.oldVel:Length()
 
     local overMin = speed - minSharpSpeed
     local damage = overMin * sharpness
@@ -625,14 +628,14 @@ function PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, 
     end
 
     local hookDat = { damage = damage }
-    hook.Run( "prop_sharpness_predamage", sharpEnt, takingDamage, hookDat, sharpData )
+    hook.Run( "prop_sharpness_predamage", sharpEnt, takingDamage, hookDat, sharpEntry )
 
     damage = hookDat.damage
 
     damage = math.floor( damage )
     if damage <= 0 then return end
 
-    local maxDamage = sharpData.maxDamage
+    local maxDamage = sharpEntry.maxDamage
     if maxDamage then
         if isstring( maxDamage ) and maxDamage == "mass" then
             local sharpEntsObj = entsMeta.GetPhysicsObject( sharpEnt )
@@ -668,16 +671,16 @@ function PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, 
 
     end
 
-    if sharpData.impaleStrength then
+    if sharpEntry.impaleStrength then
         local color = takingDamage.bloodColorHitFix or takingDamage:GetBloodColor()
 
         if isRagdoll then
-            PROP_SHARPNESS.skewerRagdoll( takingDamage, sharpEnt, sharpData.impaleStrength, sharpData.localPos, color )
+            PROP_SHARPNESS.skewerRagdoll( takingDamage, sharpEnt, sharpEntry.impaleStrength, sharpEntry.localPos, color )
 
         elseif alive then
             takingDamage:SetNW2Float( "prop_sharpness_laststabtime", CurTime() )
             takingDamage:SetNW2Entity( "prop_sharpness_laststabber", sharpEnt )
-            takingDamage:SetNW2Int( "prop_sharpness_impalestrength", sharpData.impaleStrength )
+            takingDamage:SetNW2Int( "prop_sharpness_impalestrength", sharpEntry.impaleStrength )
 
             if color then
                 takingDamage:SetNW2Int( "prop_sharpness_bloodcolor", color )
@@ -687,15 +690,15 @@ function PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, 
             takingDamage:SetNW2Bool( "prop_sharpness_hasauthedpoint", isvector( sharpPoint ) )
 
             if sharpPoint then
-                takingDamage:SetNW2Vector( "prop_sharpness_authedpoint", sharpData.localPos )
+                takingDamage:SetNW2Vector( "prop_sharpness_authedpoint", sharpEntry.localPos )
 
             end
         end
     end
 
-    local dmgType = sharpData.dmgType
+    local dmgType = sharpEntry.dmgType
     if not dmgType then
-        if sharpData.canSlice and speed > math.random( 450, 550 ) then -- slice zombies!
+        if sharpEntry.canSlice and speed > math.random( 450, 550 ) then -- slice zombies!
             dmgType = bit.bor( DMG_SLASH, DMG_CRUSH )
 
         else
@@ -796,7 +799,7 @@ function PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, 
     sharpEntsTbl.sharpness_NextDealDamage = CurTime() + 0.15
 
     if alive or isRagdoll then
-        local paths = sharpData.dmgSounds
+        local paths = sharpEntry.dmgSounds
         local path = paths[math.random( 1, #paths )]
         local pitch = math.Clamp( 120 - ( damage / 2 ), 50, 120 )
         if pitch < 65 then
@@ -810,15 +813,15 @@ function PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, 
             PROP_SHARPNESS.BloodSpray( takingDamage, nearest, dir + VectorRand(), math.Clamp( damage / math.random( 1, 10 ), 4, 10 ) )
 
         end )
-    elseif sharpData.sticks then -- STICKING
+    elseif sharpEntry.sticks then -- STICKING
         local goodStick = speed > minSharpSpeed * 4
-        local scriptedStick = sharpData.sticksIntoOnly and takingDamagesMat and sharpData.sticksIntoOnly[takingDamagesMat]
+        local scriptedStick = sharpEntry.sticksIntoOnly and takingDamagesMat and sharpEntry.sticksIntoOnly[takingDamagesMat]
         if ( scriptedStick and goodStick ) or ( sharpness >= 0.75 and damage > 25 and goodStick ) then
             if currSharpDat.preCollideAng then
                 sharpEnt:SetAngles( currSharpDat.preCollideAng )
 
             end
-            PROP_SHARPNESS.HandlePropSticking( sharpEnt, takingDamage, sharpData, pointyDir )
+            PROP_SHARPNESS.HandlePropSticking( sharpEnt, takingDamage, sharpEntry, pointyDir )
 
         end
     end
@@ -831,16 +834,14 @@ function PROP_SHARPNESS.DoSharpPoke( sharpData, currSharpDat, sharpEnt, takingDa
     if not IsValid( takingDamage ) then
         if takingDamage and takingDamage:IsWorld() then
             isWorld = true-- we stick into the world...
-
         else
             return
-
         end
     end
 
     if hook.Run( "prop_sharpness_blocksharpdamage", sharpEnt, takingDamage ) then return end
 
-    for _, sharpEntry in ipairs(sharpData) do
+    for _, sharpEntry in ipairs(sharpData.entries) do
         if PROP_SHARPNESS.DoSharpPoke_Variant(sharpEntry, currSharpDat, sharpEnt, takingDamage, isWorld) then
             break
         end
