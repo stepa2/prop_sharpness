@@ -363,6 +363,17 @@ PROP_SHARPNESS.generic_IMPALING_DULL_DOWNWARD_SPIKE = {
 
 }
 
+PROP_SHARPNESS.generic_IMPALING_BASHING_UPDOWN = {
+    typeTransformer = PROP_SHARPNESS.SHARP_DUALPOINTY,
+    dirFunc = entsMeta.GetUp,
+    startSpeed = PROP_SHARPNESS.SPEED_CRUSH,
+    sharpness = PROP_SHARPNESS.SHARPNESS_CRUSH,
+    dmgType = DMG_CRUSH,
+    dmgSounds = PROP_SHARPNESS.bashingSound,
+    impaleStrength = PROP_SHARPNESS.IMPALE_WEAK,
+
+}
+
 PROP_SHARPNESS.generic_IMPALING_BASHING_DOWNWARD = {
     typeTransformer = PROP_SHARPNESS.SHARP_POINTY,
     dirFunc = entsMeta.GetUp,
